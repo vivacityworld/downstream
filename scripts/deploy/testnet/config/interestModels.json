@@ -1,0 +1,24 @@
+[
+  {
+    "name": "DefaultJumpRateModelV2",
+    "contract": "JumpRateModelV2",
+    "args": [
+      "0",
+      "1000000000000000000",
+      "4000000000000000000",
+      "700000000000000000",
+      "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
+    ]
+  },
+  {
+    "name": "CCNoteJumpRateModelV2",
+    "contract": "JumpRateModelV2",
+    "args": [
+      "0",
+      "1000000000000000000",
+      "4000000000000000000",
+      "700000000000000000",
+      "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
+    ]
+  }
+]

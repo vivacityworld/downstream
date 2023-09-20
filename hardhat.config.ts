@@ -7,6 +7,8 @@ import "@typechain/hardhat";
 import "hardhat-gas-reporter";
 import "solidity-coverage";
 
+import "./tasks";
+
 dotenv.config();
 
 // You need to export an object to set up your config

@@ -1,0 +1,20 @@
+[
+  {
+    "underlying": "0x6B175474E89094C44Da98b954EedeAC495271d0F",
+    "name": "cRWA1",
+    "symbol": "cRWA1",
+    "admin": "0x6B175474E89094C44Da98b954EedeAC495271d0F",
+    "decimals": "18",
+    "initialExchangeRateMantissa": "100000000000000000000000000",
+    "interestRateModel": "DefaultJumpRateModelV2"
+  },
+  {
+    "underlying": "0x6B175474E89094C44Da98b954EedeAC495271d0F",
+    "name": "cRWA2",
+    "symbol": "cRWA2",
+    "admin": "0x6B175474E89094C44Da98b954EedeAC495271d0F",
+    "decimals": "18",
+    "initialExchangeRateMantissa": "100000000000000000000000000",
+    "interestRateModel": "DefaultJumpRateModelV2"
+  }
+]

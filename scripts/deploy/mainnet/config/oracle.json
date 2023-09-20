@@ -1,0 +1,12 @@
+[
+  {
+    "name": "RWA1",
+    "token": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+    "oracle": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
+  },
+  {
+    "name": "RWA2",
+    "token": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+    "oracle": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
+  }
+]
