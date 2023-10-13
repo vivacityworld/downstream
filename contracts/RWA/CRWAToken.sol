@@ -11,8 +11,16 @@ contract CRWAToken is CErc20Delegate_RWA {
 
     address whitelist;
     address public priceOracle;
+    uint256 public minimumLiquidationUSD = 150000;
 
-    uint256 internal constant MINIMUM_LIQUIDATION_USD = 150_000;
+    /**
+     * @notice  Admin function to set the minimum liquidation USD value
+     * @param   _minimumLiquidationUSD  New minimum liquidation USD value
+     */
+    function setMinimumLiquidationUSD(uint256 _minimumLiquidationUSD) external {
+        require(msg.sender == admin, "CRWAToken::setMinimumLiquidationUSD: only admin can set minimum liquidation USD");
+        minimumLiquidationUSD = _minimumLiquidationUSD;
+    }
 
     /**
      * @notice  Admin function to set the whitelist for RWA token transfers
@@ -81,7 +89,7 @@ contract CRWAToken is CErc20Delegate_RWA {
             mul_(underlyingTokens, price),
             10 ** (EIP20Interface(underlying).decimals() + 18)
         );
-        require(liquidationAmountUSD >= MINIMUM_LIQUIDATION_USD, "CRWAToken::seizeInternal: liquidation amount below minimum");
+        require(liquidationAmountUSD >= minimumLiquidationUSD, "CRWAToken::seizeInternal: liquidation amount below minimum");
 
         // continue and call normal seizeInternal function
         super.seizeInternal(seizerToken, liquidator, borrower, seizeTokens);
