@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.19;
+pragma solidity ^0.8.20;
 
-import {Clones} from "@openzeppelin/proxy/Clones.sol";
+import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 
-import {ILlamaPolicyMetadata} from "src/interfaces/ILlamaPolicyMetadata.sol";
-import {LlamaInstanceConfig} from "src/lib/Structs.sol";
-import {LlamaCore} from "src/LlamaCore.sol";
-import {LlamaPolicy} from "src/LlamaPolicy.sol";
+import {ILlamaPolicyMetadata} from "./interfaces/ILlamaPolicyMetadata.sol";
+import {LlamaInstanceConfig} from "./lib/Structs.sol";
+import {LlamaCore} from "./LlamaCore.sol";
+import {LlamaPolicy} from "./LlamaPolicy.sol";
 
 /// @title Llama Factory
 /// @author Llama (devsdosomething@llama.xyz)

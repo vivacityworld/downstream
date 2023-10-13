@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.19;
+pragma solidity ^0.8.20;
 
-import {ActionInfo} from "src/lib/Structs.sol";
-import {LlamaCore} from "src/LlamaCore.sol";
-import {LlamaPolicy} from "src/LlamaPolicy.sol";
+import {ActionInfo} from "../lib/Structs.sol";
+import {LlamaCore} from "../LlamaCore.sol";
+import {LlamaPolicy} from "../LlamaPolicy.sol";
 
 /// @title Llama Strategy Interface
 /// @author Llama (devsdosomething@llama.xyz)

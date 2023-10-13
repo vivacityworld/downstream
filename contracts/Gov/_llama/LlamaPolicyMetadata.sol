@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.19;
+pragma solidity ^0.8.20;
 
-import {Initializable} from "@openzeppelin/proxy/utils/Initializable.sol";
-import {Base64} from "@openzeppelin/utils/Base64.sol";
+import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
+import {Base64} from "@openzeppelin/contracts/utils/Base64.sol";
 
-import {LibString} from "@solady/utils/LibString.sol";
+import {LibString} from "solady/src/utils/LibString.sol";
 
-import {ILlamaPolicyMetadata} from "src/interfaces/ILlamaPolicyMetadata.sol";
+import {ILlamaPolicyMetadata} from "./interfaces/ILlamaPolicyMetadata.sol";
 
 /// @title Llama Policy Metadata
 /// @author Llama (devsdosomething@llama.xyz)

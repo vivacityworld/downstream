@@ -1,18 +1,18 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.19;
+pragma solidity ^0.8.20;
 
-import {Clones} from "@openzeppelin/proxy/Clones.sol";
+import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 
-import {LibString} from "@solady/utils/LibString.sol";
+import {LibString} from "solady/src/utils/LibString.sol";
 
-import {ILlamaPolicyMetadata} from "src/interfaces/ILlamaPolicyMetadata.sol";
-import {PolicyholderCheckpoints} from "src/lib/PolicyholderCheckpoints.sol";
-import {SupplyCheckpoints} from "src/lib/SupplyCheckpoints.sol";
-import {ERC721NonTransferableMinimalProxy} from "src/lib/ERC721NonTransferableMinimalProxy.sol";
-import {LlamaUtils} from "src/lib/LlamaUtils.sol";
-import {LlamaPolicyConfig, PermissionData} from "src/lib/Structs.sol";
-import {RoleDescription} from "src/lib/UDVTs.sol";
-import {LlamaExecutor} from "src/LlamaExecutor.sol";
+import {ILlamaPolicyMetadata} from "./interfaces/ILlamaPolicyMetadata.sol";
+import {PolicyholderCheckpoints} from "./lib/PolicyholderCheckpoints.sol";
+import {SupplyCheckpoints} from "./lib/SupplyCheckpoints.sol";
+import {ERC721NonTransferableMinimalProxy} from "./lib/ERC721NonTransferableMinimalProxy.sol";
+import {LlamaUtils} from "./lib/LlamaUtils.sol";
+import {LlamaPolicyConfig, PermissionData} from "./lib/Structs.sol";
+import {RoleDescription} from "./lib/UDVTs.sol";
+import {LlamaExecutor} from "./LlamaExecutor.sol";
 
 /// @title Llama Policy
 /// @author Llama (devsdosomething@llama.xyz)

@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.19;
+pragma solidity ^0.8.20;
 
-import {Initializable} from "@openzeppelin/proxy/utils/Initializable.sol";
+import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 
-import {FixedPointMathLib} from "@solmate/utils/FixedPointMathLib.sol";
+import {FixedPointMathLib} from "solmate/src/utils/FixedPointMathLib.sol";
 
-import {ILlamaStrategy} from "src/interfaces/ILlamaStrategy.sol";
-import {ActionState} from "src/lib/Enums.sol";
-import {LlamaUtils} from "src/lib/LlamaUtils.sol";
-import {Action, ActionInfo} from "src/lib/Structs.sol";
-import {LlamaCore} from "src/LlamaCore.sol";
-import {LlamaPolicy} from "src/LlamaPolicy.sol";
+import {ILlamaStrategy} from "../../interfaces/ILlamaStrategy.sol";
+import {ActionState} from "../../lib/Enums.sol";
+import {LlamaUtils} from "../../lib/LlamaUtils.sol";
+import {Action, ActionInfo} from "../../lib/Structs.sol";
+import {LlamaCore} from "../../LlamaCore.sol";
+import {LlamaPolicy} from "../../LlamaPolicy.sol";
 
 /// @title Llama Relative Strategy Base
 /// @author Llama (devsdosomething@llama.xyz)

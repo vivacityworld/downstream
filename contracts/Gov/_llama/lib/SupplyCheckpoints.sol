@@ -2,7 +2,7 @@
 // forgefmt: disable-start
 pragma solidity ^0.8.0;
 
-import {LlamaUtils} from "src/lib/LlamaUtils.sol";
+import {LlamaUtils} from "./LlamaUtils.sol";
 
 /**
  * @dev This library defines the `History` struct, for checkpointing values as they change at different points in

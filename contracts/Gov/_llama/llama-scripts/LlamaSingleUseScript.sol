@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import {LlamaBaseScript} from "src/llama-scripts/LlamaBaseScript.sol";
-import {LlamaCore} from "src/LlamaCore.sol";
-import {LlamaExecutor} from "src/LlamaExecutor.sol";
+import {LlamaBaseScript} from "../llama-scripts/LlamaBaseScript.sol";
+import {LlamaCore} from "../LlamaCore.sol";
+import {LlamaExecutor} from "../LlamaExecutor.sol";
 
 /// @dev This script is a template for creating new scripts, and should not be used directly.
 /// @dev This script is meant to be delegatecalled by the executor contract, with the script leveraging the

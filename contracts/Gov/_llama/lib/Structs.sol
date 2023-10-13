@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.19;
+pragma solidity ^0.8.20;
 
-import {ILlamaAccount} from "src/interfaces/ILlamaAccount.sol";
-import {ILlamaActionGuard} from "src/interfaces/ILlamaActionGuard.sol";
-import {ILlamaStrategy} from "src/interfaces/ILlamaStrategy.sol";
-import {RoleDescription} from "src/lib/UDVTs.sol";
+import {ILlamaAccount} from "../interfaces/ILlamaAccount.sol";
+import {ILlamaActionGuard} from "../interfaces/ILlamaActionGuard.sol";
+import {ILlamaStrategy} from "../interfaces/ILlamaStrategy.sol";
+import {RoleDescription} from "../lib/UDVTs.sol";
 
 /// @dev Data required to create an action.
 struct ActionInfo {

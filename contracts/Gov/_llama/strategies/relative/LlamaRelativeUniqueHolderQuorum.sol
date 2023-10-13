@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.19;
+pragma solidity ^0.8.20;
 
-import {ILlamaStrategy} from "src/interfaces/ILlamaStrategy.sol";
-import {ActionInfo} from "src/lib/Structs.sol";
-import {LlamaCore} from "src/LlamaCore.sol";
+import {ILlamaStrategy} from "../../interfaces/ILlamaStrategy.sol";
+import {ActionInfo} from "../../lib/Structs.sol";
+import {LlamaCore} from "../../LlamaCore.sol";
 
-import {LlamaRelativeStrategyBase} from "src/strategies/relative/LlamaRelativeStrategyBase.sol";
+import {LlamaRelativeStrategyBase} from "../../strategies/relative/LlamaRelativeStrategyBase.sol";
 
 /// @title Llama Relative Unique Holder Quorum Strategy
 /// @author Llama (devsdosomething@llama.xyz)

@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.19;
+pragma solidity ^0.8.20;
 
-import {ILlamaStrategy} from "src/interfaces/ILlamaStrategy.sol";
-import {LlamaAbsoluteStrategyBase} from "src/strategies/absolute/LlamaAbsoluteStrategyBase.sol";
-import {ActionInfo} from "src/lib/Structs.sol";
-import {LlamaPolicy} from "src/LlamaPolicy.sol";
+import {ILlamaStrategy} from "../../interfaces/ILlamaStrategy.sol";
+import {LlamaAbsoluteStrategyBase} from "../../strategies/absolute/LlamaAbsoluteStrategyBase.sol";
+import {ActionInfo} from "../../lib/Structs.sol";
+import {LlamaPolicy} from "../../LlamaPolicy.sol";
 
 /// @title Llama Absolute Peer Review Strategy
 /// @author Llama (devsdosomething@llama.xyz)

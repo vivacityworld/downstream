@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.19;
+pragma solidity ^0.8.20;
 
-import {ActionInfo} from "src/lib/Structs.sol";
+import {ActionInfo} from "../lib/Structs.sol";
 
 /// @title Llama Action Guard Interface
 /// @author Llama (devsdosomething@llama.xyz)

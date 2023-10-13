@@ -7,8 +7,8 @@ import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {ILlamaCore} from "../interfaces/ILlamaCore.sol";
 import {ILlamaPolicy} from "../interfaces/ILlamaPolicy.sol";
 import {StakingStorageLib, StakingStorage} from "./storages/StakingStorage.sol";
-import {Upgradeable} from "../../_proxy/Upgradeable.sol";
-import {Ownable} from "../../_proxy/Ownable.sol";
+import {Upgradeable} from "../../_utils/upgradeable/Upgradeable.sol";
+import {Ownable} from "../../_utils/upgradeable/Ownable.sol";
 
 /**
  * @title Staking

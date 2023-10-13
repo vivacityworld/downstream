@@ -2,7 +2,7 @@
 // forgefmt: disable-start
 pragma solidity ^0.8.0;
 
-import {Initializable} from "@openzeppelin/proxy/utils/Initializable.sol";
+import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 
 /// @title ERC721 Non-Transferable Minimal Proxy
 /// @notice This contract is a modified version of Solmate's ERC721 contract

@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.19;
+pragma solidity ^0.8.20;
 
-import {Clones} from "@openzeppelin/proxy/Clones.sol";
-import {Initializable} from "@openzeppelin/proxy/utils/Initializable.sol";
+import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
+import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 
-import {ILlamaAccount} from "src/interfaces/ILlamaAccount.sol";
-import {ILlamaActionGuard} from "src/interfaces/ILlamaActionGuard.sol";
-import {ILlamaPolicyMetadata} from "src/interfaces/ILlamaPolicyMetadata.sol";
-import {ILlamaStrategy} from "src/interfaces/ILlamaStrategy.sol";
-import {ActionState} from "src/lib/Enums.sol";
-import {LlamaUtils} from "src/lib/LlamaUtils.sol";
+import {ILlamaAccount} from "./interfaces/ILlamaAccount.sol";
+import {ILlamaActionGuard} from "./interfaces/ILlamaActionGuard.sol";
+import {ILlamaPolicyMetadata} from "./interfaces/ILlamaPolicyMetadata.sol";
+import {ILlamaStrategy} from "./interfaces/ILlamaStrategy.sol";
+import {ActionState} from "./lib/Enums.sol";
+import {LlamaUtils} from "./lib/LlamaUtils.sol";
 import {
   Action,
   ActionInfo,
@@ -18,9 +18,9 @@ import {
   PermissionData,
   RoleHolderData,
   RolePermissionData
-} from "src/lib/Structs.sol";
-import {LlamaExecutor} from "src/LlamaExecutor.sol";
-import {LlamaPolicy} from "src/LlamaPolicy.sol";
+} from "./lib/Structs.sol";
+import {LlamaExecutor} from "./LlamaExecutor.sol";
+import {LlamaPolicy} from "./LlamaPolicy.sol";
 
 /// @title Llama Core
 /// @author Llama (devsdosomething@llama.xyz)

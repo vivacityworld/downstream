@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.19;
+pragma solidity ^0.8.20;
 
-import {PermissionData} from "src/lib/Structs.sol";
+import {PermissionData} from "./Structs.sol";
 
 /// @dev Shared helper methods for Llama's contracts.
 library LlamaUtils {

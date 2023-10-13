@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.19;
+pragma solidity ^0.8.20;
 
-import {LlamaBaseScript} from "src/llama-scripts/LlamaBaseScript.sol";
-import {ILlamaStrategy} from "src/interfaces/ILlamaStrategy.sol";
-import {LlamaCore} from "src/LlamaCore.sol";
-import {LlamaExecutor} from "src/LlamaExecutor.sol";
-import {LlamaPolicy} from "src/LlamaPolicy.sol";
-import {LlamaUtils} from "src/lib/LlamaUtils.sol";
-import {RoleHolderData, RolePermissionData} from "src/lib/Structs.sol";
-import {RoleDescription} from "src/lib/UDVTs.sol";
+import {LlamaBaseScript} from "./LlamaBaseScript.sol";
+import {ILlamaStrategy} from "../interfaces/ILlamaStrategy.sol";
+import {LlamaCore} from "../LlamaCore.sol";
+import {LlamaExecutor} from "../LlamaExecutor.sol";
+import {LlamaPolicy} from "../LlamaPolicy.sol";
+import {LlamaUtils} from "../lib/LlamaUtils.sol";
+import {RoleHolderData, RolePermissionData} from "../lib/Structs.sol";
+import {RoleDescription} from "../lib/UDVTs.sol";
 
 /// @title Llama Governance Script
 /// @author Llama (devsdosomething@llama.xyz)
