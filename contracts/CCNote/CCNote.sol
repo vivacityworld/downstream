@@ -15,27 +15,25 @@ contract CCNote is CErc20Delegate_CCNote {
     // ======== Variables ===========
     // ==============================
 
-    // CNOTE address
-    address public constant CNOTE = 0x09635F643e140090A9A8Dcd712eD6285858ceBef;
     // address of Neofinance Coodinator's lending ledger 
     address public lendingLedger;
 
+    // ==============================
+    // ======== Admin Functions =====
+    // ==============================
+
+    /**
+     * @notice Sets the lending ledger address
+     * @param _lendingLedger Address of the lending ledger
+     */
+    function setLendingLedger(address _lendingLedger) external {
+        require(msg.sender == admin, "CCNote::setLendingLedger: only admin can set lendingLedger");
+        lendingLedger = _lendingLedger;
+    }
 
     // ==============================
     // ======== Overrides ===========
     // ==============================
-
-    function initialize(address underlying_,
-                        ComptrollerInterface comptroller_,
-                        InterestRateModel interestRateModel_,
-                        uint initialExchangeRateMantissa_,
-                        string memory name_,
-                        string memory symbol_,
-                        uint8 decimals_) public override {
-        // check that the underlying is CNOTE
-        require(CNOTE == underlying_, "underlying is not CNOTE");
-        super.initialize(underlying_, comptroller_, interestRateModel_, initialExchangeRateMantissa_, name_, symbol_, decimals_);
-    }
 
     function mintInternal(uint mintAmount) override internal nonReentrant {
         super.mintInternal(mintAmount);
@@ -97,18 +95,5 @@ contract CCNote is CErc20Delegate_CCNote {
     function getStoredBalanceOfUnderlying(address account) private view returns (uint) {
         Exp memory exchangeRate = Exp({mantissa: exchangeRateStoredInternal()});
         return mul_ScalarTruncate(exchangeRate, accountTokens[account]);
-    }
-
-    // ==============================
-    // ======== Admin Functions =====
-    // ==============================
-
-    /**
-     * @notice Sets the lending ledger address
-     * @param _lendingLedger Address of the lending ledger
-     */
-    function setLendingLedger(address _lendingLedger) external {
-        require(msg.sender == admin, "CCNote::setLendingLedger: only admin can set lendingLedger");
-        lendingLedger = _lendingLedger;
     }
 }
