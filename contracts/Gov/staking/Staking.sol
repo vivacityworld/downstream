@@ -2,42 +2,32 @@
 pragma solidity ^0.8.10;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {ILlamaCore} from "./interfaces/ILlamaCore.sol";
-import {ILlamaPolicy} from "./interfaces/ILlamaPolicy.sol";
-
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
+
+import {ILlamaCore} from "../interfaces/ILlamaCore.sol";
+import {ILlamaPolicy} from "../interfaces/ILlamaPolicy.sol";
+import {StakingStorageLib, StakingStorage} from "./storages/StakingStorage.sol";
+import {Upgradeable} from "../../_proxy/Upgradeable.sol";
+import {Ownable} from "../../_proxy/Ownable.sol";
 
 /**
  * @title Staking
  * @notice Staking contract for VIVA holders
  * @dev This contract is used to stake VIVA tokens and receive voting power in Llama Governance
  */
-contract Staking {
+contract Staking is Upgradeable, Ownable {
     using SafeCast for uint256;
     using SafeCast for int256;
 
     // ==============================
-    // ======== Variables ===========
+    // ======== Constants ===========
     // ==============================
 
     // A scaling factor for precision
     uint256 public constant SCALE = 1e18;
 
     // Selector for the 'setRoleHolder' function in llamaPolicy
-    bytes4 private constant SELECTOR = bytes4(keccak256("setRoleHolder(uint8,address,uint96,uint64)"));
-
-    // Llama variables
-    address public immutable llamaCore;             // llamaCore contract address
-    address public immutable llamaPolicy;           // llamaPolicy contract address
-    address public immutable stakingModuleStrategy; // stakingModuleStrategy contract address
-    uint8 public immutable stakingModuleRole;       // stakingModule role id
-    uint8 public immutable stakerRole;              // staker role id
-
-    // VIVA staking variables
-    address public immutable viva;                  // VIVA token address
-    mapping(address => uint256) public balances;    // VIVA balances
-    mapping(address => address) public delegates;   // VIVA delegates
-
+    bytes4 public constant SELECTOR = bytes4(keccak256("setRoleHolder(uint8,address,uint96,uint64)"));
 
     // ==============================
     // ========== Events ============
@@ -46,7 +36,7 @@ contract Staking {
     event MoveDelegates(address indexed from, address indexed to, uint256 fromAmount, uint256 toAmount);
 
     // ==============================
-    // ======== Constructor =========
+    // ========= Initialize =========
     // ==============================
 
     /**
@@ -58,13 +48,16 @@ contract Staking {
     * @param _stakingModuleRole Llama stakingModule role id
     * @param _stakerRole Llama staker role id
     */
-    constructor (address _viva, address _llamaCore, address _llamaPolicy, address _stakingModuleStrategy, uint8 _stakingModuleRole, uint8 _stakerRole) {
-        viva = _viva;
-        llamaCore = _llamaCore;
-        llamaPolicy = _llamaPolicy;
-        stakingModuleStrategy = _stakingModuleStrategy;
-        stakingModuleRole = _stakingModuleRole;
-        stakerRole = _stakerRole;
+    function initialize(address _viva, address _llamaCore, address _llamaPolicy, address _stakingModuleStrategy, uint8 _stakingModuleRole, uint8 _stakerRole) public {
+        __initialize_Ownable(msg.sender);
+
+        StakingStorage storage ss = StakingStorageLib.get();
+        ss.viva = _viva;
+        ss.llama.llamaCore = _llamaCore;
+        ss.llama.llamaPolicy = _llamaPolicy;
+        ss.llama.stakingModuleStrategy = _stakingModuleStrategy;
+        ss.llama.stakingModuleRole = _stakingModuleRole;
+        ss.llama.stakerRole = _stakerRole;
     }
 
     // ==============================
@@ -77,14 +70,15 @@ contract Staking {
     * @param amount Amount of VIVA tokens to delegate
     */
     function delegate(address delegatee, uint256 amount) external {
-        address currentDelegatee = delegates[msg.sender];
-        uint256 currentBalance = balances[msg.sender];
+        StakingStorage storage ss = StakingStorageLib.get();
+        address currentDelegatee = ss.delegates[msg.sender];
+        uint256 currentBalance = ss.balances[msg.sender];
 
-        IERC20(viva).transferFrom(msg.sender, address(this), amount);
-        balances[msg.sender] += amount;
-        delegates[msg.sender] = delegatee;
+        IERC20(ss.viva).transferFrom(msg.sender, address(this), amount);
+        ss.balances[msg.sender] += amount;
+        ss.delegates[msg.sender] = delegatee;
 
-        _moveDelegates(currentDelegatee, currentBalance, delegatee, balances[msg.sender]);
+        _moveDelegates(currentDelegatee, currentBalance, delegatee, ss.balances[msg.sender]);
     }
 
     /**
@@ -92,15 +86,16 @@ contract Staking {
     * @param amount Amount of VIVA tokens to undelegate
     */
     function undelegate(uint256 amount) public {
-        require(balances[msg.sender] >= amount, "Staking: insufficient balance");
+        StakingStorage storage ss = StakingStorageLib.get();
+        require(ss.balances[msg.sender] >= amount, "Staking: insufficient balance");
 
-        address currentDelegatee = delegates[msg.sender];
-        uint256 currentBalance = balances[msg.sender];
+        address currentDelegatee = ss.delegates[msg.sender];
+        uint256 currentBalance = ss.balances[msg.sender];
 
-        balances[msg.sender] -= amount;
-        IERC20(viva).transfer(msg.sender, amount);
+        ss.balances[msg.sender] -= amount;
+        IERC20(ss.viva).transfer(msg.sender, amount);
 
-        _moveDelegates(currentDelegatee, currentBalance, currentDelegatee, balances[msg.sender]);
+        _moveDelegates(currentDelegatee, currentBalance, currentDelegatee, ss.balances[msg.sender]);
     }
 
     // ==============================
@@ -142,23 +137,24 @@ contract Staking {
     * @param increase Whether to increase or decrease the delta
     */
     function _applyDeltaRoleHolder(address holder, uint96 delta, bool increase) internal {
-        uint96 quantity = ILlamaPolicy(llamaPolicy).getQuantity(holder, stakerRole);
+        StakingStorage storage ss = StakingStorageLib.get();
+        uint96 quantity = ILlamaPolicy(ss.llama.llamaPolicy).getQuantity(holder, ss.llama.stakerRole);
         uint96 newQuantity = increase ? quantity + delta : quantity - delta;
         uint64 expiration = newQuantity == 0 ? 0 : type(uint64).max;
-        bytes memory data = abi.encodeWithSelector(SELECTOR, stakerRole, holder, newQuantity, expiration);
+        bytes memory data = abi.encodeWithSelector(SELECTOR, ss.llama.stakerRole, holder, newQuantity, expiration);
 
-        uint256 actionId = ILlamaCore(llamaCore).createAction(stakingModuleRole, stakingModuleStrategy, llamaPolicy, 0, data, "");
+        uint256 actionId = ILlamaCore(ss.llama.llamaCore).createAction(ss.llama.stakingModuleRole, ss.llama.stakingModuleStrategy, ss.llama.llamaPolicy, 0, data, "");
         ILlamaCore.ActionInfo memory actionInfo = ILlamaCore.ActionInfo({
             id: actionId,
             creator: address(this),
-            creatorRole: stakingModuleRole,
-            strategy: stakingModuleStrategy,
-            target: llamaPolicy,
+            creatorRole: ss.llama.stakingModuleRole,
+            strategy: ss.llama.stakingModuleStrategy,
+            target: ss.llama.llamaPolicy,
             value: 0,
             data: data
         });
-        ILlamaCore(llamaCore).castApproval(stakingModuleRole, actionInfo, "");
-        ILlamaCore(llamaCore).executeAction(actionInfo);
+        ILlamaCore(ss.llama.llamaCore).castApproval(ss.llama.stakingModuleRole, actionInfo, "");
+        ILlamaCore(ss.llama.llamaCore).executeAction(actionInfo);
     }
 
     /**
