@@ -3,7 +3,7 @@ pragma solidity ^0.8.10;
 
 import "./CErc20Delegate_RWA.sol";
 import "../PriceOracle.sol";
-import "./IWhitelist.sol";
+import "./whitelist/interfaces/IWhitelistRouter.sol";
 
 contract CRWAToken is CErc20Delegate_RWA {
     error NoCRWATransfer();
@@ -70,7 +70,7 @@ contract CRWAToken is CErc20Delegate_RWA {
     ) internal override {
         // check whitelist
         require(whitelist != address(0), "CRWAToken::seizeInternal: whitelist not set");
-        if (!IWhitelist(whitelist).isCustomer(liquidator)) {
+        if (!IWhitelistRouter(whitelist).isWhitelisted(underlying, liquidator)) {
             revert NotWhitelisted(liquidator);
         }
         /** check liquidation amount */
