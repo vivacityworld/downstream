@@ -82,10 +82,10 @@ contract Comptroller is ComptrollerV7Storage, ComptrollerInterface, ComptrollerE
     uint internal constant closeFactorMinMantissa = 0.05e18; // 0.05
 
     // closeFactorMantissa must not exceed this value
-    uint internal constant closeFactorMaxMantissa = 0.9e18; // 0.9
+    uint256 internal constant closeFactorMaxMantissa = 1e18; // 1.0 max closeFactor should be 100% for RWA support
 
     // No collateralFactorMantissa may exceed this value
-    uint internal constant collateralFactorMaxMantissa = 0.9e18; // 0.9
+    uint256 internal constant collateralFactorMaxMantissa = 0.99e18; // 0.99 max collateralFactor should be 99% for RWA support
 
     constructor() {
         admin = msg.sender;

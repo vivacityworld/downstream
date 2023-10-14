@@ -1,6 +1,7 @@
-pragma solidity ^0.8.10;
+// SPDX-License-Identifier: UNLICENSED
+pragma solidity ^0.8.0;
 
-interface IRWAPriceOracle {
+interface ISDYCPriceOracle {
     function latestRoundData()
         external
         view
