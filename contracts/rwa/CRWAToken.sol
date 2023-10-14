@@ -2,8 +2,8 @@
 pragma solidity ^0.8.10;
 
 import "./CErc20Delegate_RWA.sol";
+import "../PriceOracle.sol";
 import "./IWhitelist.sol";
-import "./IRWAPriceOracle.sol";
 
 contract CRWAToken is CErc20Delegate_RWA {
     error NoCRWATransfer();
@@ -77,7 +77,7 @@ contract CRWAToken is CErc20Delegate_RWA {
 
         // get current price of underlying RWA
         require(priceOracle != address(0), "CRWAToken::seizeInternal: price oracle not set");
-        (, int answer, , , ) = IRWAPriceOracle(priceOracle).latestRoundData();
+        uint answer = PriceOracle(priceOracle).getUnderlyingPrice(CToken(address(this)));
 
         // convert seizeTokens to underlying RWA amount (exchange rate is scaled to 1e18)
         uint underlyingTokens = div_(
@@ -85,9 +85,10 @@ contract CRWAToken is CErc20Delegate_RWA {
             1e18
         );
         // divide total by 10^(underlyingDecimals + priceDecimals) to get USD value
+        // price decimals are always set to 18
         uint liquidationAmountUSD = div_(
             mul_(underlyingTokens, uint(answer)),
-            10 ** (EIP20Interface(underlying).decimals() + IRWAPriceOracle(priceOracle).decimals())
+            10 ** (EIP20Interface(underlying).decimals() + 18)
         );
         require(liquidationAmountUSD >= minimumLiquidationUSD, "CRWAToken::seizeInternal: liquidation amount below minimum");
 
