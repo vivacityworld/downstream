@@ -1,11 +1,8 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.19;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-/// @title Llama Account Logic Interface
-/// @author Llama (devsdosomething@llama.xyz)
-/// @notice This is the interface for Llama accounts which can be used to hold assets for a Llama instance.
 interface ILlamaCore {
   struct ActionInfo {
     uint256 id; // ID of the action.
