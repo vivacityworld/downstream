@@ -4,6 +4,17 @@ pragma solidity ^0.8.19;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 interface ILlamaCore {
+
+  enum ActionState {
+    Active, // Action created and approval period begins.
+    Canceled, // Action canceled by creator.
+    Failed, // Action approval failed.
+    Approved, // Action approval succeeded and ready to be queued.
+    Queued, // Action queued for queueing duration and disapproval period begins.
+    Expired, // block.timestamp is greater than Action's executionTime + expirationDelay.
+    Executed // Action has executed successfully.
+  }
+
   struct ActionInfo {
     uint256 id; // ID of the action.
     address creator; // Address that created the action.
@@ -26,4 +37,5 @@ interface ILlamaCore {
   function castApproval(uint8 role, ActionInfo calldata actionInfo, string calldata reason) external returns (uint96);
 
   function getQuantity(address policyholder, uint8 role) external view returns (uint96);
+  function getActionState(ActionInfo calldata actionInfo) external view returns (ActionState);
 }

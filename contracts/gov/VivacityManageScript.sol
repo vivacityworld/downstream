@@ -7,16 +7,18 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IUnitroller} from "./interfaces/IUnitroller.sol";
 import {IComptroller} from "./interfaces/IComptroller.sol";
 import {ILlamaAccount} from "./interfaces/ILlamaAccount.sol";
+import {IVestingVault} from "./interfaces/IVestingVault.sol";
 import {ICToken} from "./interfaces/ICToken.sol";
 import {ICRWA} from "./interfaces/ICRWA.sol";
 import {ICCNote} from "./interfaces/ICCNote.sol";
 import {IAdminable} from "./interfaces/IAdminable.sol";
+import {IOwnable} from "./interfaces/IOwnable.sol";
 import {IPriceOracleRouter} from "./interfaces/IPriceOracleRouter.sol";
+import {IWhitelistRouter} from "./interfaces/IWhitelistRouter.sol";
 import {ICErc20Delegator} from "./interfaces/ICErc20Delegator.sol";
 
 import {LlamaBaseScript} from "./_llama/llama-scripts/LlamaBaseScript.sol";
 import {LlamaUtils} from "./_llama/lib/LlamaUtils.sol";
-
 
 /**
   * @title VivacityManageScript
@@ -53,7 +55,6 @@ contract VivacityManageScript is LlamaBaseScript {
   error MismatchedArrayLengths();
 
 
-
   ///////////////////////////////
   /////       GENERAL       /////
   ///////////////////////////////
@@ -85,10 +86,13 @@ contract VivacityManageScript is LlamaBaseScript {
   /////     ADMINABLE       /////
   ///////////////////////////////
 
-  function acceptAdmin(address comptroller) external onlyDelegateCall {
-    IAdminable(comptroller)._acceptAdmin();
+  function acceptAdmin(address target) external onlyDelegateCall {
+    IAdminable(target)._acceptAdmin();
   }
 
+  function acceptOwnership(address target) external onlyDelegateCall {
+    IOwnable(target).acceptOwnership();
+  }
 
   ///////////////////////////////
   /////     COMPTROLLER     /////
@@ -114,12 +118,25 @@ contract VivacityManageScript is LlamaBaseScript {
     IComptroller(comptroller)._setPriceOracle(oracle);
   }
 
+  function supportMarket(address comptroller, address cToken) external onlyDelegateCall {
+    require(ICToken(cToken).comptroller() == comptroller, "VivacityManageScript: cToken does not match comptroller");
+    IComptroller(comptroller)._supportMarket(cToken);
+  }
+
   ///////////////////////////////
   /////     PRICE ORACLE    /////
   ///////////////////////////////
 
   function setPriceOracle(address router, address token, address oracle) external onlyDelegateCall {
     IPriceOracleRouter(router).setOracle(token, oracle);
+  }
+
+  ///////////////////////////////
+  /////     PRICE ORACLE    /////
+  ///////////////////////////////
+
+  function setWhitelist(address router, address token, address whitelistContract) external onlyDelegateCall {
+    IWhitelistRouter(router).setWhitelistContract(token, whitelistContract);
   }
 
   /////////////////////////////////
@@ -190,6 +207,23 @@ contract VivacityManageScript is LlamaBaseScript {
 
   function setSeizePaused(address comptroller, bool state) external onlyDelegateCall {
     IComptroller(comptroller)._setSeizePaused(state);
+  }
+
+
+  ///////////////////////////
+  /////     VESTING     /////
+  ///////////////////////////
+
+  function addVestings(address vestingVault, address[] memory _account, uint64[] memory _start, uint64[] memory _duration, uint256[] memory _amount) external onlyDelegateCall {
+    IVestingVault(vestingVault).add(_account, _start, _duration, _amount);
+  }
+
+  function removeVesting(address vestingVault, uint256 vestingId, bool doRelease) external onlyDelegateCall {
+    IVestingVault(vestingVault).remove(vestingId, doRelease);
+  }
+
+  function transferFromVesting(address vestingVault, address _to, uint256 _amount) external onlyDelegateCall {
+    IVestingVault(vestingVault).transfer(_to, _amount);
   }
 
 

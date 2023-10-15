@@ -9,6 +9,7 @@ interface IComptroller {
 
     function getCompAddress() external view returns (address);
 
+    function _supportMarket(address cToken) external returns (uint);
     function _setCompSpeeds(address[] memory cTokens, uint[] memory supplySpeeds, uint[] memory borrowSpeeds) external;
     function _setLiquidationIncentive(uint256) external;
     function _setCloseFactor(uint256) external;
@@ -16,7 +17,7 @@ interface IComptroller {
     function _setMarketBorrowCaps(address[] memory cTokens, uint[] memory newBorrowCaps) external;
     function _setPriceOracle(address newOracle) external returns (uint);
     function _setPauseGuardian(address newPauseGuardian) external returns (uint);
-    function _setBorrowCapGuardian(address newBorrowCapGuardian) external returns (bool);
+    function _setBorrowCapGuardian(address newBorrowCapGuardian) external;
 
     function _setMintPaused(address, bool) external;
     function _setBorrowPaused(address, bool) external;
