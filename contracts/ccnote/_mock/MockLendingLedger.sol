@@ -22,4 +22,13 @@ contract MockLendingLedger is ILendingLedger {
     function claim(address _market, uint256 _claimFromTimestamp, uint256 _claimUpToTimestamp) external {} 
 	function setSecondaryRewards(address _lendingMarket, address _incentiveToken, uint256 _fromEpoch, uint256 _toEpoch, uint256 _amountPerEpoch) external {}
 	function claimSecondaryRewards(address _lendingMarket, address _incentiveToken, uint256 _fromEpoch, uint256 _toEpoch) external {}
+
+	function rewardInformation(uint256 _epoch) external view returns (RewardInformation memory) {
+		return ILendingLedger.RewardInformation(false, 0);
+	}
+
+    function userClaimedEpochs(address _market, address _lender) external view returns (uint256) {}
+    function secondaryRewards(address _market, address _incentiveToken, uint256 _epoch) external view returns (uint256) {}
+    function secondaryRewardsClaimed(address _market, address _lender, address _incentiveToken, uint256 _epoch) external view returns (bool) {}
+
 }

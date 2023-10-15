@@ -12,7 +12,6 @@ interface ILendingLedger {
     function secondaryRewards(address _market, address _incentiveToken, uint256 _epoch) external view returns (uint256);
     function secondaryRewardsClaimed(address _market, address _lender, address _incentiveToken, uint256 _epoch) external view returns (bool);
 
-    function lendingMarkets() external view returns (address[] memory);
 
     function lendingMarketBalancesEpoch(address _lender, address _market) external view returns (uint256 epoch);
     function lendingMarketBalances(address _lender, address _market, uint256 _epoch) external view returns (uint256 balance);
