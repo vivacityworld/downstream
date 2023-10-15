@@ -1,0 +1,70 @@
+{
+  "comment": "Vivacity Governance",
+  "factory": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
+  "instanceName": "Vivacity Market",
+  "instanceColor": "#000000",
+  "instanceLogo": "",
+  "strategyLogic": "",
+  "accountLogic": "",
+  "initialStrategies": [
+    {
+      "approvalPeriod": 691200,
+      "queuingPeriod": 0,
+      "expirationPeriod": 691200,
+      "minApprovalPct": 1,
+      "minDisapprovalPct": 1,
+      "isFixedLengthApprovalPeriod": false,
+      "approvalRole": 1,
+      "disapprovalRole": 1,
+      "forceApprovalRoles": [],
+      "forceDisapprovalRoles": []
+    },
+    {
+      "approvalPeriod": 1,
+      "queuingPeriod": 0,
+      "expirationPeriod": 1,
+      "minApprovalPct": 1,
+      "minDisapprovalPct": 1,
+      "isFixedLengthApprovalPeriod": false,
+      "approvalRole": 2,
+      "disapprovalRole": 2,
+      "forceApprovalRoles": [],
+      "forceDisapprovalRoles": []
+    },
+    {
+      "approvalPeriod": 86400,
+      "queuingPeriod": 0,
+      "expirationPeriod": 86400,
+      "minApprovalPct": 6600,
+      "minDisapprovalPct": 6600,
+      "isFixedLengthApprovalPeriod": false,
+      "approvalRole": 3,
+      "disapprovalRole": 3,
+      "forceApprovalRoles": [],
+      "forceDisapprovalRoles": []
+    }
+  ],
+  "initialAccounts": [
+    {
+      "name": "Vivacity Treasury"
+    },
+    {
+      "name": "Reward Vault"
+    }
+  ],
+  "initialRoleDescriptions": [
+    "Deployer",
+    "Staking Module",
+    "Staker"
+  ],
+  "initialRoleHolders": [
+    {
+      "comment": "Deployer",
+      "policyholder": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+      "expiration": "18446744073709551615",
+      "quantity": 1,
+      "role": 1
+    }
+  ],
+  "initialRolePermissions": []
+}
