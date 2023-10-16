@@ -64,7 +64,6 @@ async function main({ deployed }: { deployed: DeployLocal }) {
 
   await helper.executeVivaScript([
     // accept ownership
-    ["acceptOwnership", [deployed.staking]],
     ["acceptAdmin", [deployed.comptroller]],
     // add vesting
     ["addVestings", [deployed.vestingVault, _account, _start, _duration, _amount]],

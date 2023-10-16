@@ -11,11 +11,11 @@ async function main({ deployed }: { deployed: DeployLocal }) {
   ////////////////////////////////
   //       DEPLOY STAKING       //
   ////////////////////////////////
-  const proxyFactory = await ethers.getContractFactory("VivaProxy");
+  const proxyFactory = await ethers.getContractFactory("ERC1967Proxy");
   const stakingFactory = await ethers.getContractFactory("Staking");
 
   const impl = await stakingFactory.deploy();
-  const proxy = await proxyFactory.deploy(impl.address);
+  const proxy = await proxyFactory.deploy(impl.address, []);
 
   const staking = await ethers.getContractAt("Staking", proxy.address);
 
@@ -30,7 +30,7 @@ async function main({ deployed }: { deployed: DeployLocal }) {
   ////////////////////////////////
   //     Transfer Ownership     //
   ////////////////////////////////
-  await staking.transferOwnership(deployed.llama?.llamaExecutor!);
+  await staking.setAdmin(deployed.llama?.llamaExecutor!);
 
   return { staking: staking.address }
 }
