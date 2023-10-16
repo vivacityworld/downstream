@@ -50,6 +50,12 @@ contract CCNote is CErc20Delegate_CCNote {
         syncLendingLedger(msg.sender);
     }
 
+    function seizeInternal(address seizerToken, address liquidator, address borrower, uint seizeTokens) internal override {
+        super.seizeInternal(seizerToken, liquidator, borrower, seizeTokens);
+        syncLendingLedger(borrower);
+        syncLendingLedger(liquidator);
+    } 
+
     function transferTokens(address spender, address src, address dst, uint tokens) override internal returns (uint value) {
         value = super.transferTokens(spender, src, dst, tokens);
         syncLendingLedger(src);
@@ -78,7 +84,7 @@ contract CCNote is CErc20Delegate_CCNote {
     }
 
     /**
-     * @notice Gets the last liquidity in the loan ledger.
+     * @notice Gets the last liquidity in the lending ledger.
      * @param account Address of the account
      * @return liquidity liquidity of the account
      */

@@ -799,7 +799,7 @@ abstract contract CToken_CCNote is CTokenInterface, ExponentialNoError, TokenErr
      * @param borrower The account having collateral seized
      * @param seizeTokens The number of cTokens to seize
      */
-    function seizeInternal(address seizerToken, address liquidator, address borrower, uint seizeTokens) internal {
+    function seizeInternal(address seizerToken, address liquidator, address borrower, uint seizeTokens) internal virtual {
         /* Fail if seize not allowed */
         uint allowed = comptroller.seizeAllowed(address(this), seizerToken, liquidator, borrower, seizeTokens);
         if (allowed != 0) {
