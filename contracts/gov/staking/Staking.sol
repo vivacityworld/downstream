@@ -7,7 +7,7 @@ import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {ILlamaCore} from "../interfaces/ILlamaCore.sol";
 import {ILlamaPolicy} from "../interfaces/ILlamaPolicy.sol";
 import {StakingStorageLib, StakingStorage} from "./storages/StakingStorage.sol";
-import {Upgradeable} from "../../_utils/upgradeable/Upgradeable.sol";
+import {Upgradeable} from "../../_utils/proxy/Upgradeable.sol";
 import {Ownable} from "../../_utils/upgradeable/Ownable.sol";
 
 /**
@@ -15,7 +15,7 @@ import {Ownable} from "../../_utils/upgradeable/Ownable.sol";
  * @notice Staking contract for VIVA holders
  * @dev This contract is used to stake VIVA tokens and receive voting power in Llama Governance
  */
-contract Staking is Upgradeable, Ownable {
+contract Staking is Upgradeable {
     using SafeCast for uint256;
     using SafeCast for int256;
 
@@ -49,8 +49,6 @@ contract Staking is Upgradeable, Ownable {
     * @param _stakerRole Llama staker role id
     */
     function initialize(address _viva, address _llamaCore, address _llamaPolicy, address _stakingModuleStrategy, uint8 _stakingModuleRole, uint8 _stakerRole) public {
-        __initialize_Ownable(msg.sender);
-
         StakingStorage storage ss = StakingStorageLib.get();
         ss.viva = _viva;
         ss.llama.llamaCore = _llamaCore;
