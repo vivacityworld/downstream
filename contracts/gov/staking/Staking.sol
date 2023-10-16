@@ -6,7 +6,8 @@ import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 import {ILlamaCore} from "../interfaces/ILlamaCore.sol";
 import {ILlamaPolicy} from "../interfaces/ILlamaPolicy.sol";
-import {StakingStorageLib, StakingStorage} from "./storages/StakingStorage.sol";
+import {StakingStorageLib, StakingStorage, Proposal} from "./storages/StakingStorage.sol";
+import {LlamaStorageLib, LlamaStorage} from "./storages/LlamaStorage.sol";
 import {Upgradeable} from "../../_proxy/Upgradeable.sol";
 
 /**
@@ -33,6 +34,7 @@ contract Staking is Upgradeable {
     // ==============================
 
     event MoveDelegates(address indexed from, address indexed to, uint256 fromAmount, uint256 toAmount);
+    event Propose(address indexed proposer, uint256 indexed actionId, address indexed target, bytes data, string description);
 
     // ==============================
     // ========= Initialize =========
@@ -50,16 +52,46 @@ contract Staking is Upgradeable {
     function initialize(address _viva, address _llamaCore, address _llamaPolicy, address _stakingModuleStrategy, uint8 _stakingModuleRole, uint8 _stakerRole) public {
         StakingStorage storage ss = StakingStorageLib.get();
         ss.viva = _viva;
-        ss.llama.llamaCore = _llamaCore;
-        ss.llama.llamaPolicy = _llamaPolicy;
-        ss.llama.stakingModuleStrategy = _stakingModuleStrategy;
-        ss.llama.stakingModuleRole = _stakingModuleRole;
-        ss.llama.stakerRole = _stakerRole;
+
+        LlamaStorage storage ls = LlamaStorageLib.get();
+
+        ls.llamaCore = _llamaCore;
+        ls.llamaPolicy = _llamaPolicy;
+        ls.stakingModuleStrategy = _stakingModuleStrategy;
+        ls.stakingModuleRole = _stakingModuleRole;
+        ls.stakerRole = _stakerRole;
     }
 
-    // ==============================
-    // ======== External ============
-    // ==============================
+    // =================================
+    // ======== Admin Functions ========
+    // =================================
+
+    function setLlama(address llamaCore, address llamaPolicy, address stakingModuleStrategy, uint8 stakingModuleRole, uint8 stakerRole) external {
+        require(msg.sender == getAdmin(), "Staking: only admin can set llama");
+        LlamaStorage storage ls = LlamaStorageLib.get();
+        ls.llamaCore = llamaCore;
+        ls.llamaPolicy = llamaPolicy;
+        ls.stakingModuleStrategy = stakingModuleStrategy;
+        ls.stakingModuleRole = stakingModuleRole;
+        ls.stakerRole = stakerRole;
+    }
+
+    function setDeposit(uint96 amount) external {
+        require(msg.sender == getAdmin(), "Staking: only admin can set lock amount");
+        StakingStorage storage ss = StakingStorageLib.get();
+        ss.deposit = amount;
+    }
+
+    function transferReserve(address to, uint256 amount) external {
+        require(msg.sender == getAdmin(), "Staking: only admin can transfer reserve");
+        StakingStorage storage ss = StakingStorageLib.get();
+        ss.reserve -= amount;
+        IERC20(ss.viva).transfer(to, amount);
+    }
+
+    // ==================================
+    // ============ External ============
+    // ==================================
 
     /**
     * @notice Delegate VIVA tokens to another address
@@ -84,7 +116,9 @@ contract Staking is Upgradeable {
     */
     function undelegate(uint256 amount) public {
         StakingStorage storage ss = StakingStorageLib.get();
-        require(ss.balances[msg.sender] >= amount, "Staking: insufficient balance");
+
+        uint256 balance = ss.balances[msg.sender] - ss.lockedBalances[msg.sender];
+        require(balance >= amount, "Staking: insufficient balance");
 
         address currentDelegatee = ss.delegates[msg.sender];
         uint256 currentBalance = ss.balances[msg.sender];
@@ -93,6 +127,57 @@ contract Staking is Upgradeable {
         IERC20(ss.viva).transfer(msg.sender, amount);
 
         _moveDelegates(currentDelegatee, currentBalance, currentDelegatee, ss.balances[msg.sender]);
+    }
+
+    /**
+    * @notice propose a new action
+    * @param target Target of the proposal
+    * @param data Data of the proposal
+    * @param description Description of the proposal
+    */
+    function propose(address target, bytes calldata data, string memory description) external {
+        StakingStorage storage ss = StakingStorageLib.get();
+        uint256 balance = ss.balances[msg.sender] - ss.lockedBalances[msg.sender];
+        require(balance >= ss.deposit, "Staking: insufficient balance");
+
+        LlamaStorage storage ls = LlamaStorageLib.get();
+        uint256 actionId = ILlamaCore(ls.llamaCore).createAction(ls.stakingModuleRole, ls.stakerStrategy, target, 0, data, description);
+        ss.proposals[actionId] = Proposal(msg.sender, uint96(ss.deposit));
+        ss.lockedBalances[msg.sender] += ss.deposit;
+    }
+
+
+    /**
+    * @notice Withdraw VIVA tokens from a proposal
+    * @param actionId Action id of the proposal
+    * @param target Address of the proposal
+    * @param data Data of the proposal
+    */
+    function withdraw(uint256 actionId, address target, bytes calldata data) external {
+        StakingStorage storage ss = StakingStorageLib.get();
+        Proposal memory proposal = ss.proposals[actionId];
+
+        LlamaStorage storage ls = LlamaStorageLib.get();
+        ILlamaCore.ActionInfo memory actionInfo = ILlamaCore.ActionInfo({
+            id: actionId,
+            creator: address(this),
+            creatorRole: ls.stakingModuleRole,
+            strategy: ls.stakerStrategy,
+            target: target,
+            value: 0,
+            data: data
+        });
+        ILlamaCore.ActionState state = ILlamaCore(ls.llamaCore).getActionState(actionInfo);
+
+        if (state == ILlamaCore.ActionState.Executed) {
+            ss.lockedBalances[msg.sender] -= proposal.deposit;
+        } else if (state == ILlamaCore.ActionState.Canceled || state == ILlamaCore.ActionState.Failed || state == ILlamaCore.ActionState.Expired) {
+            _moveDelegates(proposal.proposer, ss.balances[msg.sender], proposal.proposer, ss.balances[msg.sender] - proposal.deposit);
+            ss.lockedBalances[msg.sender] -= proposal.deposit;
+            ss.balances[msg.sender] -= proposal.deposit;
+            ss.reserve += proposal.deposit;
+        }
+        delete ss.proposals[actionId];
     }
 
     // ==============================
@@ -131,24 +216,24 @@ contract Staking is Upgradeable {
     * @param delta Amount of delta to apply
     */
     function _applyDeltaRoleHolder(address holder, int256 delta) internal {
-        StakingStorage storage ss = StakingStorageLib.get();
-        uint96 quantity = ILlamaPolicy(ss.llama.llamaPolicy).getQuantity(holder, ss.llama.stakerRole);
+        LlamaStorage storage ls = LlamaStorageLib.get();
+        uint96 quantity = ILlamaPolicy(ls.llamaPolicy).getQuantity(holder, ls.stakerRole);
         uint96 newQuantity = (uint256(quantity).toInt256() + delta).toUint256().toUint96();
         uint64 expiration = newQuantity == 0 ? 0 : type(uint64).max;
-        bytes memory data = abi.encodeWithSelector(SELECTOR, ss.llama.stakerRole, holder, newQuantity, expiration);
+        bytes memory data = abi.encodeWithSelector(SELECTOR, ls.stakerRole, holder, newQuantity, expiration);
 
-        uint256 actionId = ILlamaCore(ss.llama.llamaCore).createAction(ss.llama.stakingModuleRole, ss.llama.stakingModuleStrategy, ss.llama.llamaPolicy, 0, data, "");
+        uint256 actionId = ILlamaCore(ls.llamaCore).createAction(ls.stakingModuleRole, ls.stakingModuleStrategy, ls.llamaPolicy, 0, data, "");
         ILlamaCore.ActionInfo memory actionInfo = ILlamaCore.ActionInfo({
             id: actionId,
             creator: address(this),
-            creatorRole: ss.llama.stakingModuleRole,
-            strategy: ss.llama.stakingModuleStrategy,
-            target: ss.llama.llamaPolicy,
+            creatorRole: ls.stakingModuleRole,
+            strategy: ls.stakingModuleStrategy,
+            target: ls.llamaPolicy,
             value: 0,
             data: data
         });
-        ILlamaCore(ss.llama.llamaCore).castApproval(ss.llama.stakingModuleRole, actionInfo, "");
-        ILlamaCore(ss.llama.llamaCore).executeAction(actionInfo);
+        ILlamaCore(ls.llamaCore).castApproval(ls.stakingModuleRole, actionInfo, "");
+        ILlamaCore(ls.llamaCore).executeAction(actionInfo);
     }
 
     /**
