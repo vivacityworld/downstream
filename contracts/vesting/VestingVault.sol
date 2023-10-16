@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -45,7 +46,7 @@ contract VestingVault is Ownable {
      * @notice Constructor to initialize the contract with the specified ERC20 token.
      * @param _token The address of the ERC20 token contract to be used for vesting.
      */
-    constructor(address _token) {
+    constructor(address _token) Ownable(msg.sender) {
         require(_token != address(0), "VestingVault: token is zero address");
         token = IERC20(_token);
     }

@@ -10,6 +10,8 @@ contract OffchainFundPriceOracleRouter is PriceOracle, Ownable {
     using Math for uint256;
 
     mapping(CToken => address) public oracles;
+    
+    constructor() Ownable(msg.sender) {}
 
     function getUnderlyingPrice(CToken cToken) public override view returns (uint) {
         if (oracles[cToken] == address(0)) {

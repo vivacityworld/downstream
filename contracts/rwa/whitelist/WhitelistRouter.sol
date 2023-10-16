@@ -8,6 +8,8 @@ contract WhitelistRouter is Ownable, IWhitelistRouter {
 
     mapping(address => address) public whitelistContracts;
 
+    constructor() Ownable(msg.sender) {}
+
     function isWhitelisted(
         address token,
         address receiver

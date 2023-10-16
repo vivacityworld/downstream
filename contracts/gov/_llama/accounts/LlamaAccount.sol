@@ -185,7 +185,7 @@ contract LlamaAccount is ILlamaAccount, ERC721Holder, ERC1155Holder, Initializab
   /// @notice Approve an ERC20 allowance for a recipient.
   /// @param erc20Data The `token`, `recipient`, and `amount` for the ERC20 approval.
   function approveERC20(ERC20Data calldata erc20Data) public onlyLlama {
-    erc20Data.token.safeApprove(erc20Data.recipient, erc20Data.amount);
+    erc20Data.token.approve(erc20Data.recipient, erc20Data.amount);
   }
 
   /// @notice Batch approve ERC20 allowances for recipients.
