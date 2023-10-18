@@ -146,7 +146,6 @@ contract Staking is Upgradeable {
         ss.lockedBalances[msg.sender] += ss.deposit;
     }
 
-
     /**
     * @notice Withdraw VIVA tokens from a proposal
     * @param actionId Action id of the proposal
@@ -171,13 +170,14 @@ contract Staking is Upgradeable {
 
         if (state == ILlamaCore.ActionState.Executed) {
             ss.lockedBalances[msg.sender] -= proposal.deposit;
+            delete ss.proposals[actionId];
         } else if (state == ILlamaCore.ActionState.Canceled || state == ILlamaCore.ActionState.Failed || state == ILlamaCore.ActionState.Expired) {
             _moveDelegates(proposal.proposer, ss.balances[msg.sender], proposal.proposer, ss.balances[msg.sender] - proposal.deposit);
             ss.lockedBalances[msg.sender] -= proposal.deposit;
             ss.balances[msg.sender] -= proposal.deposit;
             ss.reserve += proposal.deposit;
+            delete ss.proposals[actionId];
         }
-        delete ss.proposals[actionId];
     }
 
     // ==============================

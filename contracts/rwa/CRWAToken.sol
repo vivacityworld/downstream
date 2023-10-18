@@ -84,12 +84,9 @@ contract CRWAToken is CErc20Delegate_RWA {
             mul_(seizeTokens, exchangeRateStoredInternal()),
             1e18
         );
-        // divide total by 10^(underlyingDecimals + priceDecimals) to get USD value
-        // price decimals are always set to 18
-        uint liquidationAmountUSD = div_(
-            mul_(underlyingTokens, uint(answer)),
-            10 ** (EIP20Interface(underlying).decimals() + 18)
-        );
+        // PriceOracle returns a price reflected the decimals of asset. For example, if the asset has 6 decimals, the price will be scaled to 1e30
+        // divide total by 1e18 to get USD value
+        uint liquidationAmountUSD = div_(mul_(underlyingTokens, uint(answer)), 1e18);
         require(liquidationAmountUSD >= minimumLiquidationUSD, "CRWAToken::seizeInternal: liquidation amount below minimum");
 
         // continue and call normal seizeInternal function

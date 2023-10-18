@@ -5,9 +5,13 @@ import "../oracle/interfaces/IOffchainFundPriceOracle.sol";
 
 contract MockOffchainFundPriceOracle is IOffchainFundPriceOracle {
 
-    uint256 public immutable price;
+    uint256 public price;
 
 	constructor(uint256 _price) {
+		price = _price;
+	}
+
+	function setPrice(uint256 _price) external {
 		price = _price;
 	}
 

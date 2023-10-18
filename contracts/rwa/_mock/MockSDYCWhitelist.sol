@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 import "../whitelist/interfaces/ISDYCWhitelist.sol";
 
-contract MockSDYCPriceOracle is ISDYCWhitelist {
+contract MockSDYCWhitelist is ISDYCWhitelist {
 
     mapping(address => bool) public whitelist;
 

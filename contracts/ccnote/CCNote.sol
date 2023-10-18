@@ -62,15 +62,11 @@ contract CCNote is CErc20Delegate_CCNote {
         syncLendingLedger(dst);
     }
 
-    // ==============================
-    // ======== Internal ============
-    // ==============================
-
     /**
      * @notice Syncs the lending ledger with the current liquidity of the account
      * @param target Address of the account to sync
      */
-    function syncLendingLedger(address target) private {
+    function syncLendingLedger(address target) public {
         if (lendingLedger == address(0)) return;
         
         uint lastLiquidity = getLastLiquidity(target);
@@ -83,12 +79,16 @@ contract CCNote is CErc20Delegate_CCNote {
             ILendingLedger(lendingLedger).sync_ledger(target, -int(lastLiquidity - currentLiquidity));
     }
 
+    // ==============================
+    // ======== Internal ============
+    // ==============================
+
     /**
      * @notice Gets the last liquidity in the lending ledger.
      * @param account Address of the account
      * @return liquidity liquidity of the account
      */
-    function getLastLiquidity(address account) public view returns (uint256) {
+    function getLastLiquidity(address account) internal view returns (uint256) {
         uint256 lastEpoch = ILendingLedger(lendingLedger).lendingMarketBalancesEpoch(address(this), account);
         return ILendingLedger(lendingLedger).lendingMarketBalances(address(this), account, lastEpoch);
     }
@@ -98,7 +98,7 @@ contract CCNote is CErc20Delegate_CCNote {
      * @param account Address of the account
      * @return amount Amount of underlying
      */
-    function getStoredBalanceOfUnderlying(address account) private view returns (uint) {
+    function getStoredBalanceOfUnderlying(address account) internal view returns (uint) {
         Exp memory exchangeRate = Exp({mantissa: exchangeRateStoredInternal()});
         return mul_ScalarTruncate(exchangeRate, accountTokens[account]);
     }

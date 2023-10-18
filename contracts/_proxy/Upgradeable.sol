@@ -30,7 +30,7 @@ contract Upgradeable is UUPSUpgradeable {
         ERC1967Utils.changeAdmin(newAdmin);
     }
 
-    function getAdmin() external view returns (address) {
+    function getAdmin() public view returns (address) {
         return ERC1967Utils.getAdmin();
     }
 }
