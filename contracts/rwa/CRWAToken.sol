@@ -86,7 +86,7 @@ contract CRWAToken is CErc20Delegate_RWA {
         );
         // PriceOracle returns a price reflected the decimals of asset. For example, if the asset has 6 decimals, the price will be scaled to 1e30
         // divide total by 1e18 to get USD value
-        uint liquidationAmountUSD = div_(mul_(underlyingTokens, uint(answer)), 1e18);
+        uint liquidationAmountUSD = div_(mul_(underlyingTokens, answer), 1e18);
         require(liquidationAmountUSD >= minimumLiquidationUSD, "CRWAToken::seizeInternal: liquidation amount below minimum");
 
         // continue and call normal seizeInternal function
