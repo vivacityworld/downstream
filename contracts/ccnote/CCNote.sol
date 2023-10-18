@@ -35,17 +35,17 @@ contract CCNote is CErc20Delegate_CCNote {
     // ======== Overrides ===========
     // ==============================
 
-    function mintInternal(uint mintAmount) override internal nonReentrant {
+    function mintInternal(uint mintAmount) override internal {
         super.mintInternal(mintAmount);
         syncLendingLedger(msg.sender);
     }
 
-    function redeemInternal(uint redeemTokens) override internal nonReentrant {
+    function redeemInternal(uint redeemTokens) override internal {
         super.redeemInternal(redeemTokens);
         syncLendingLedger(msg.sender);
     }
 
-    function redeemUnderlyingInternal(uint redeemAmount) override internal nonReentrant {
+    function redeemUnderlyingInternal(uint redeemAmount) override internal {
         super.redeemUnderlyingInternal(redeemAmount);
         syncLendingLedger(msg.sender);
     }
@@ -54,7 +54,7 @@ contract CCNote is CErc20Delegate_CCNote {
         super.seizeInternal(seizerToken, liquidator, borrower, seizeTokens);
         syncLendingLedger(borrower);
         syncLendingLedger(liquidator);
-    } 
+    }
 
     function transferTokens(address spender, address src, address dst, uint tokens) override internal returns (uint value) {
         value = super.transferTokens(spender, src, dst, tokens);
