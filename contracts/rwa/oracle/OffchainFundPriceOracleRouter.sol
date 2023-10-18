@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
 import {PriceOracle, CToken} from "../../PriceOracle.sol";
+import {CErc20} from "../../CErc20.sol";
 import {IOffchainFundPriceOracle} from "./interfaces/IOffchainFundPriceOracle.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
@@ -20,7 +21,7 @@ contract OffchainFundPriceOracleRouter is PriceOracle, Ownable {
             return 0;
         }
         uint256 answer = IOffchainFundPriceOracle(oracles[cToken]).currentPrice();
-        uint256 scale = 10 ** (36 - IERC20(CToken(cToken).underlying()).decimals() - 8);
+        uint256 scale = 10 ** (36 - IERC20Metadata(CErc20(address(cToken)).underlying()).decimals() - 8);
         return uint256(answer) * scale;
     }
 

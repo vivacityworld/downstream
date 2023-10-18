@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
 import {PriceOracle, CToken} from "../../PriceOracle.sol";
+import {CErc20} from "../../CErc20.sol";
 import {ISDYCPriceOracle} from "./interfaces/ISDYCPriceOracle.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
@@ -20,7 +21,7 @@ contract SDYCPriceOracleRouter is PriceOracle, Ownable {
             return 0;
         }
         (, int256 answer,,,) = ISDYCPriceOracle(oracles[cToken]).latestRoundData();
-        uint256 scale = 10 ** (36 - ISDYCPriceOracle(oracles[cToken]).decimals() - IERC20(CToken(cToken).underlying()).decimals());
+        uint256 scale = 10 ** (36 - ISDYCPriceOracle(oracles[cToken]).decimals() - IERC20Metadata(CErc20(address(cToken)).underlying()).decimals());
         return uint256(answer) * scale;
     }
 
