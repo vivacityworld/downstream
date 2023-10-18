@@ -1,10 +1,10 @@
 # Overview
 
-CCNote is a contract that enables cNote to be used as collateral in the Vivacity (compound v2). CCNote inherits from the Compound v2 CToken contract (with slight changes to certain visibilities to allow for overrides).
+CCNote is a contract that enables cNote to be used as borrowing asset in the Vivacity (compound v2). CCNote inherits from the Compound v2 CToken contract (with slight changes to certain visibilities to allow for overrides).
 
 ### About CCNote:
 
-CCNote with cNote (erc20) as underlying asset
+cNote (erc20) is underlying asset for ccNote
 
 ### Requirements for CCNote:
 
@@ -19,7 +19,7 @@ About LendingLedger:
 **Changes to CToken contracts**
 
 - Synchronize changes in underlying (cNOTE) with LendingLedger.
-  - This will be checked in the `mintInternal()`, `redeemInternal()`, `redeemUnderlyingInternal()`, `transferTokens()` override function
+  - This will be checked in the `mintInternal()`, `redeemInternal()`, `redeemUnderlyingInternal()`, `seizeInternal()`, `transferTokens()` override function
 
 **Visibility Changes for overriding**
 
@@ -33,6 +33,9 @@ About LendingLedger:
   - `redeemUnderlyingInternal()` changed to virtual
     - allows for override to perform underlying supply sync with LendingLedger.
     - calls `super.redeemUnderlyingInternal()` before underlying supply sync
+  - `seizeInternal()` changed to virtual
+    - allows for override to perform underlying supply sync with LendingLedger.
+    - calls `super.seizeInternal()` before underlying supply sync
   - `transferTokens()` changed to virtual
     - allows for override to perform underlying supply sync with LendingLedger.
     - calls `super.transferTokens()` before underlying supply sync
