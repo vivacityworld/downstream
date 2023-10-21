@@ -1,10 +1,4 @@
-// We require the Hardhat Runtime Environment explicitly here. This is optional
-// but useful for running the script in a standalone fashion through `node <script>`.
-//
-// When running the script with `npx hardhat run <script>` you'll find the Hardhat
-// Runtime Environment's members available in the global scope.
 import { ethers } from "hardhat";
-import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { DeployLocal } from "../../types/deploy";
 import DISTIBUTION from "../../../config/distribution.json"
 
@@ -39,7 +33,7 @@ async function main({ deployed }: { deployed: DeployLocal }) {
   const amountPerEpoch = totalIncentive.div(numWeeks);
 
   await viva.approve(lendingLedger.address, totalIncentive);
-  await lendingLedger.setSecondaryRewards(deployed.ccNote!, viva.address, lm.start, lm.start + lm.duration, amountPerEpoch);
+  await lendingLedger.setSecondaryRewards(deployed.vcNote!, viva.address, lm.start, lm.start + lm.duration, amountPerEpoch);
 
   await viva.transfer(deployed.llama?.vivacityTreasury!, await viva.balanceOf(signer.address));
 

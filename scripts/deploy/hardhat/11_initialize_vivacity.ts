@@ -1,14 +1,8 @@
-// We require the Hardhat Runtime Environment explicitly here. This is optional
-// but useful for running the script in a standalone fashion through `node <script>`.
-//
-// When running the script with `npx hardhat run <script>` you'll find the Hardhat
-// Runtime Environment's members available in the global scope.
 import { ethers } from "hardhat";
-import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { DeployLocal } from "../../types/deploy";
 import DISTIBUTION from "../../../config/distribution.json"
 
-import { createLlamaBootstrapHelper, getSelector, getPermission } from "../../_utils/llama";
+import { createLlamaBootstrapHelper, getPermission } from "../../_utils/llama";
 
 async function main({ deployed }: { deployed: DeployLocal }) {
 
@@ -52,6 +46,8 @@ async function main({ deployed }: { deployed: DeployLocal }) {
   // grant role to staking module
   await helper.executeGovScript([
     [policy, "setRolePermission", [STAKING_MODULE_ROLE, getPermission(policy, "setRoleHolder(uint8,address,uint96,uint64)", stakingModuleStrategy), true]],
+    [policy, "setRolePermission", [STAKING_MODULE_ROLE, getPermission(vivacityManageScript, "multicall(bytes[])", stakerStrategy), true]],
+    [policy, "setRolePermission", [STAKING_MODULE_ROLE, getPermission(llamaGovScript, "aggregate(address[],bytes[])", stakerStrategy), true]],
     [policy, "setRolePermission", [STAKER_ROLE, getPermission(vivacityManageScript, "multicall(bytes[])", stakerStrategy), true]],
     [policy, "setRolePermission", [STAKER_ROLE, getPermission(llamaGovScript, "aggregate(address[],bytes[])", stakerStrategy), true]],
     [policy, "setRoleHolder", [STAKING_MODULE_ROLE, deployed.staking!, 1, ethers.BigNumber.from(2).pow(64).sub(1)]],
@@ -73,15 +69,15 @@ async function main({ deployed }: { deployed: DeployLocal }) {
     ["setBorrowCapGuardian", [deployed.comptroller, deployed.llama?.llamaExecutor]],
     ["setPauseGuardian", [deployed.comptroller, deployed.llama?.llamaExecutor]],
     ["setComptrollerPriceOracle", [deployed.comptroller, deployed.oracle?.priceOracleRouter]],
-    // set ccnote parameters
-    ["setLendingLedger", [deployed.ccNote, deployed.lendingLedger]],
-    ["setReserveFactor", [deployed.ccNote, ethers.utils.parseUnits("0.2", 18)]],
-    ["setCollateralFactor", [deployed.comptroller, deployed.ccNote, 0]],
-    ["setBorrowCap", [deployed.comptroller, deployed.ccNote, 0]],
+    // set vcnote parameters
+    ["setLendingLedger", [deployed.vcNote, deployed.lendingLedger]],
+    ["setReserveFactor", [deployed.vcNote, ethers.utils.parseUnits("0.2", 18)]],
+    ["setCollateralFactor", [deployed.comptroller, deployed.vcNote, 0]],
+    ["setBorrowCap", [deployed.comptroller, deployed.vcNote, 0]],
     // set oracle
-    ["setPriceOracle", [deployed.oracle?.priceOracleRouter, deployed.ccNote, deployed.oracle?.ccNotePriceOracle]],
+    ["setPriceOracle", [deployed.oracle?.priceOracleRouter, deployed.vcNote, deployed.oracle?.vcNotePriceOracle]],
     // support market
-    ["supportMarket", [deployed.comptroller, deployed.ccNote]],
+    ["supportMarket", [deployed.comptroller, deployed.vcNote]],
   ]);
 
   // revoke deployer strategy 

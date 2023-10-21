@@ -1,8 +1,3 @@
-// We require the Hardhat Runtime Environment explicitly here. This is optional
-// but useful for running the script in a standalone fashion through `node <script>`.
-//
-// When running the script with `npx hardhat run <script>` you'll find the Hardhat
-// Runtime Environment's members available in the global scope.
 import { ethers } from "hardhat";
 import { DeployLocal } from "../../types/deploy";
 
@@ -22,7 +17,10 @@ async function main({ deployed }: { deployed: DeployLocal }) {
   await staking.initialize(deployed.VIVA!,
     deployed.llama?.llamaCore!,
     deployed.llama?.llamaPolicy!,
+    deployed.llama?.llamaExecutor!,
+    "0x0000000000000000000000000000000000000000",
     deployed.llama?.stakingModuleStrategy!,
+    deployed.llama?.stakerStrategy!,
     2,
     3
   );

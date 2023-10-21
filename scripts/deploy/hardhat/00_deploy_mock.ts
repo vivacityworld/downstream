@@ -1,8 +1,3 @@
-// We require the Hardhat Runtime Environment explicitly here. This is optional
-// but useful for running the script in a standalone fashion through `node <script>`.
-//
-// When running the script with `npx hardhat run <script>` you'll find the Hardhat
-// Runtime Environment's members available in the global scope.
 import { ethers } from "hardhat";
 import { DeployLocal } from "../../types/deploy";
 import DISTRIBUTION from "../../../config/distribution.json"
@@ -16,7 +11,6 @@ async function main({ deployed }: { deployed: DeployLocal }) {
   ////////////////////////////////
   const MockERC20Factory = await ethers.getContractFactory('MockERC20');
   const note = await MockERC20Factory.deploy("NOTE", "NOTE");
-
 
   const VivaTokenFactory = await ethers.getContractFactory('VivaToken');
   const viva = await VivaTokenFactory.deploy("VIVA", "VIVA", ethers.utils.parseUnits(DISTRIBUTION.totalSupply, 18));
