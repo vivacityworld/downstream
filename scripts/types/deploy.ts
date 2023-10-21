@@ -11,7 +11,7 @@ export interface DeployLocal {
   whitelistRouter?: string;
   oracle?: Oracle;
   comptroller?: string;
-  ccNote?: string;
+  vcNote?: string;
   staking?: string;
   vivaLens?: string;
   rwa?: any;
@@ -71,5 +71,5 @@ export interface Oracle {
   priceOracleRouter: string;
   sdycPriceOracleRouter: string;
   offchainFundPriceOracleRouter: string;
-  ccNotePriceOracle: string;
+  vcNotePriceOracle: string;
 }

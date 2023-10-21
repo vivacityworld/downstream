@@ -125,6 +125,10 @@ contract VestingVault is Ownable {
         }
     }
 
+    function nextVestingId() public view virtual returns (uint256) {
+        return vestings.length;
+    }
+
     /**
      * @notice Transfers tokens to a specified address.
      * @param _to The address to transfer tokens to.
