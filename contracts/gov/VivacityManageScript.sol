@@ -10,7 +10,7 @@ import {ILlamaAccount} from "./interfaces/ILlamaAccount.sol";
 import {IVestingVault} from "./interfaces/IVestingVault.sol";
 import {ICToken} from "./interfaces/ICToken.sol";
 import {ICRWA} from "./interfaces/ICRWA.sol";
-import {ICCNote} from "./interfaces/ICCNote.sol";
+import {IVCNote} from "./interfaces/IVCNote.sol";
 import {IAdminable} from "./interfaces/IAdminable.sol";
 import {IOwnable} from "./interfaces/IOwnable.sol";
 import {IPriceOracleRouter} from "./interfaces/IPriceOracleRouter.sol";
@@ -161,9 +161,9 @@ contract VivacityManageScript is LlamaBaseScript {
     ICToken(cToken)._setInterestRateModel(interestRateModel);
   }
 
-  // CCNote
+  // VCNote
   function setLendingLedger(address cToken, address lendingLedger) external onlyDelegateCall {
-    ICCNote(cToken).setLendingLedger(lendingLedger);
+    IVCNote(cToken).setLendingLedger(lendingLedger);
   }
 
   // CRWA
