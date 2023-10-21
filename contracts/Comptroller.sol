@@ -9,6 +9,7 @@ import "./ComptrollerStorage.sol";
 import "./Unitroller.sol";
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "./_interfaces/ITurnstile.sol";
 
 /**
  * @title Compound's Comptroller Contract
@@ -89,6 +90,16 @@ contract Comptroller is ComptrollerV7Storage, ComptrollerInterface, ComptrollerE
 
     constructor() {
         admin = msg.sender;
+    }
+
+    /**
+     * @notice  Assign for CSR
+     * @param   turnstile  Address of turnstile contract
+     * @param   tokenId    tokenId which will collect fees
+     */
+    function assignForCSR(address turnstile, uint256 tokenId) external {
+        require(admin == msg.sender, "assignForCSR: only admin");
+        ITurnstile(turnstile).assign(tokenId);
     }
 
     /*** Assets You Are In ***/

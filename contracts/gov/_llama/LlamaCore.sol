@@ -22,6 +22,9 @@ import {
 import {LlamaExecutor} from "./LlamaExecutor.sol";
 import {LlamaPolicy} from "./LlamaPolicy.sol";
 
+// for CSR
+import {ITurnstile} from "../../_interfaces/ITurnstile.sol";
+
 /// @title Llama Core
 /// @author Llama (devsdosomething@llama.xyz)
 /// @notice Manages the action process from creation to execution.
@@ -497,6 +500,15 @@ contract LlamaCore is Initializable {
     if (signer == address(0) || signer != policyholder) revert InvalidSignature();
     return _castDisapproval(signer, role, actionInfo, reason);
   }
+
+    /**
+     * @notice  Assign for CSR
+     * @param   turnstile  Address of turnstile contract
+     * @param   tokenId    tokenId which will collect fees
+     */
+    function assignForCSR(address turnstile, uint256 tokenId) external onlyLlama {
+        ITurnstile(turnstile).assign(tokenId);
+    }
 
   // -------- Instance Management --------
 

@@ -4,6 +4,7 @@ pragma solidity ^0.8.10;
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
+import {ITurnstile} from "../../_interfaces/ITurnstile.sol";
 import {ILlamaCore} from "../interfaces/ILlamaCore.sol";
 import {ILlamaPolicy} from "../interfaces/ILlamaPolicy.sol";
 import {StakingStorageLib, StakingStorage, Proposal} from "./storages/StakingStorage.sol";
@@ -35,6 +36,15 @@ contract Staking is Upgradeable {
 
     event MoveDelegates(address indexed from, address indexed to, uint256 fromAmount, uint256 toAmount);
     event Propose(address indexed proposer, uint256 indexed actionId, address indexed target, bytes data, string description);
+    event RegisterTurnstile(address indexed turnstile, uint256 indexed nftId);
+
+    // ==============================
+    // ========== Errors ============
+    // ==============================
+
+    error InsufficientBalance(uint256 balance, uint256 amount);
+    error ActiveProposal(uint256 actionId);
+    // error Unauthorized(address account);
 
     // ==============================
     // ========= Initialize =========
@@ -49,7 +59,7 @@ contract Staking is Upgradeable {
     * @param _stakingModuleRole Llama stakingModule role id
     * @param _stakerRole Llama staker role id
     */
-    function initialize(address _viva, address _llamaCore, address _llamaPolicy, address _stakingModuleStrategy, uint8 _stakingModuleRole, uint8 _stakerRole) public {
+    function initialize(address _viva, address _llamaCore, address _llamaPolicy, address _llamaExecutor, address _turnstile, address _stakingModuleStrategy, address _stakerStrategy, uint8 _stakingModuleRole, uint8 _stakerRole) public {
         StakingStorage storage ss = StakingStorageLib.get();
         ss.viva = _viva;
 
@@ -58,8 +68,14 @@ contract Staking is Upgradeable {
         ls.llamaCore = _llamaCore;
         ls.llamaPolicy = _llamaPolicy;
         ls.stakingModuleStrategy = _stakingModuleStrategy;
+        ls.stakerStrategy = _stakerStrategy;
         ls.stakingModuleRole = _stakingModuleRole;
         ls.stakerRole = _stakerRole;
+
+        if (_turnstile != address(0)) {
+            uint256 nftId = ITurnstile(_turnstile).register(_llamaExecutor);
+            emit RegisterTurnstile(_turnstile, nftId);
+        }
     }
 
     // =================================
@@ -67,7 +83,7 @@ contract Staking is Upgradeable {
     // =================================
 
     function setLlama(address llamaCore, address llamaPolicy, address stakingModuleStrategy, uint8 stakingModuleRole, uint8 stakerRole) external {
-        require(msg.sender == getAdmin(), "Staking: only admin can set llama");
+        if (msg.sender != getAdmin()) revert Unauthorized(msg.sender);
         LlamaStorage storage ls = LlamaStorageLib.get();
         ls.llamaCore = llamaCore;
         ls.llamaPolicy = llamaPolicy;
@@ -77,13 +93,13 @@ contract Staking is Upgradeable {
     }
 
     function setDeposit(uint96 amount) external {
-        require(msg.sender == getAdmin(), "Staking: only admin can set lock amount");
+        if (msg.sender != getAdmin()) revert Unauthorized(msg.sender);
         StakingStorage storage ss = StakingStorageLib.get();
         ss.deposit = amount;
     }
 
     function transferReserve(address to, uint256 amount) external {
-        require(msg.sender == getAdmin(), "Staking: only admin can transfer reserve");
+        if (msg.sender != getAdmin()) revert Unauthorized(msg.sender);
         StakingStorage storage ss = StakingStorageLib.get();
         ss.reserve -= amount;
         IERC20(ss.viva).transfer(to, amount);
@@ -100,6 +116,7 @@ contract Staking is Upgradeable {
     */
     function delegate(address delegatee, uint256 amount) external {
         StakingStorage storage ss = StakingStorageLib.get();
+
         address currentDelegatee = ss.delegates[msg.sender];
         uint256 currentBalance = ss.balances[msg.sender];
 
@@ -117,11 +134,11 @@ contract Staking is Upgradeable {
     function undelegate(uint256 amount) public {
         StakingStorage storage ss = StakingStorageLib.get();
 
-        uint256 balance = ss.balances[msg.sender] - ss.lockedBalances[msg.sender];
-        require(balance >= amount, "Staking: insufficient balance");
-
         address currentDelegatee = ss.delegates[msg.sender];
         uint256 currentBalance = ss.balances[msg.sender];
+
+        uint256 availableBalance = ss.balances[msg.sender] - ss.lockedBalances[msg.sender];
+        if (availableBalance < amount) revert InsufficientBalance(availableBalance, amount);
 
         ss.balances[msg.sender] -= amount;
         IERC20(ss.viva).transfer(msg.sender, amount);
@@ -135,15 +152,19 @@ contract Staking is Upgradeable {
     * @param data Data of the proposal
     * @param description Description of the proposal
     */
-    function propose(address target, bytes calldata data, string memory description) external {
+    function propose(address target, bytes calldata data, string memory description) external returns (uint256 actionId) {
         StakingStorage storage ss = StakingStorageLib.get();
-        uint256 balance = ss.balances[msg.sender] - ss.lockedBalances[msg.sender];
-        require(balance >= ss.deposit, "Staking: insufficient balance");
+
+        uint256 availableBalance = ss.balances[msg.sender] - ss.lockedBalances[msg.sender];
+        if (availableBalance < ss.deposit) revert InsufficientBalance(availableBalance, ss.deposit);
+
+        ss.lockedBalances[msg.sender] += ss.deposit;
 
         LlamaStorage storage ls = LlamaStorageLib.get();
-        uint256 actionId = ILlamaCore(ls.llamaCore).createAction(ls.stakingModuleRole, ls.stakerStrategy, target, 0, data, description);
-        ss.proposals[actionId] = Proposal(msg.sender, uint96(ss.deposit));
-        ss.lockedBalances[msg.sender] += ss.deposit;
+        actionId = ILlamaCore(ls.llamaCore).createAction(ls.stakingModuleRole, ls.stakerStrategy, target, 0, data, description);
+        ss.proposals[actionId] = Proposal(msg.sender, ss.deposit);
+
+        emit Propose(msg.sender, actionId, target, data, description);
     }
 
     /**
@@ -170,14 +191,18 @@ contract Staking is Upgradeable {
 
         if (state == ILlamaCore.ActionState.Executed) {
             ss.lockedBalances[msg.sender] -= proposal.deposit;
-            delete ss.proposals[actionId];
         } else if (state == ILlamaCore.ActionState.Canceled || state == ILlamaCore.ActionState.Failed || state == ILlamaCore.ActionState.Expired) {
-            _moveDelegates(proposal.proposer, ss.balances[msg.sender], proposal.proposer, ss.balances[msg.sender] - proposal.deposit);
+            uint256 currentBalance = ss.balances[msg.sender];
+
             ss.lockedBalances[msg.sender] -= proposal.deposit;
             ss.balances[msg.sender] -= proposal.deposit;
             ss.reserve += proposal.deposit;
-            delete ss.proposals[actionId];
+            
+            _moveDelegates(proposal.proposer, currentBalance, proposal.proposer, ss.balances[msg.sender]);
+        } else {
+            revert ActiveProposal(actionId);
         }
+        delete ss.proposals[actionId];
     }
 
     // ==============================
@@ -204,7 +229,7 @@ contract Staking is Upgradeable {
             }
         } else {
             if (previousPower != newPower) {
-                 _applyDeltaRoleHolder(previousDelegatee, newPower - previousPower);
+                _applyDeltaRoleHolder(previousDelegatee, newPower - previousPower);
             }
         }
         emit MoveDelegates(previousDelegatee, newDelegatee, previousAmount, newAmount);
@@ -242,5 +267,49 @@ contract Staking is Upgradeable {
     */
     function _downscale(uint256 amount) internal pure returns (uint256) {
         return amount / SCALE; 
+    }
+
+    // ==============================
+    // ======== VIEW ================
+    // ==============================
+
+    function balanceOf(address account) external view returns (uint256) {
+        StakingStorage storage ss = StakingStorageLib.get();
+        return ss.balances[account];
+    }
+
+    function lockedBalanceOf(address account) external view returns (uint256) {
+        StakingStorage storage ss = StakingStorageLib.get();
+        return ss.lockedBalances[account];
+    }
+
+    function delegates(address account) external view returns (address) {
+        StakingStorage storage ss = StakingStorageLib.get();
+        return ss.delegates[account];
+    }
+
+    function getProposer(uint256 actionId) external view returns (address) {
+        StakingStorage storage ss = StakingStorageLib.get();
+        return ss.proposals[actionId].proposer;
+    }
+
+    function getDeposit(uint256 actionId) external view returns (uint96) {
+        StakingStorage storage ss = StakingStorageLib.get();
+        return ss.proposals[actionId].deposit;
+    }
+
+    function getDeposit() external view returns (uint96) {
+        StakingStorage storage ss = StakingStorageLib.get();
+        return ss.deposit;
+    }
+
+    function getReserve() external view returns (uint256) {
+        StakingStorage storage ss = StakingStorageLib.get();
+        return ss.reserve;
+    }
+
+    function getVotingPower(address account) external view returns (uint256) {
+        LlamaStorage storage ls = LlamaStorageLib.get();
+        return ILlamaPolicy(ls.llamaPolicy).getQuantity(account, ls.stakerRole);
     }
 }

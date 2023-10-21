@@ -11,11 +11,11 @@ import {ERC1967Utils} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Utils.s
  */
 contract Upgradeable is UUPSUpgradeable {
 
-    error Unauthorized();
+    error Unauthorized(address caller);
 
     function _authorizeUpgrade(address) internal view override {
         if (ERC1967Utils.getAdmin() != msg.sender) {
-            revert Unauthorized();
+            revert Unauthorized(msg.sender);
         }
     }
 
@@ -25,7 +25,7 @@ contract Upgradeable is UUPSUpgradeable {
 
     function setAdmin(address newAdmin) external {
         if (ERC1967Utils.getAdmin() != msg.sender) {
-            revert Unauthorized();
+            revert Unauthorized(msg.sender);
         }
         ERC1967Utils.changeAdmin(newAdmin);
     }
