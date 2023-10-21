@@ -1,14 +1,14 @@
 # Overview
 
-CCNote is a contract that enables cNote to be used as borrowing asset in the Vivacity (compound v2). CCNote inherits from the Compound v2 CToken contract (with slight changes to certain visibilities to allow for overrides).
+VCNote is a contract that enables cNote to be used as borrowing asset in the Vivacity (compound v2). VCNote inherits from the Compound v2 CToken contract (with slight changes to certain visibilities to allow for overrides).
 
-### About CCNote:
+### About VCNote:
 
-cNote (erc20) is underlying asset for ccNote
+cNote (erc20) is underlying asset for vcNote
 
-### Requirements for CCNote:
+### Requirements for VCNote:
 
-- If there are any changes to the cNote Lender's supply, CCNote must synchronize the changes with LendingLedger.
+- If there are any changes to the cNote Lender's supply, VCNote must synchronize the changes with LendingLedger.
 
 About LendingLedger:
 

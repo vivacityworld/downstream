@@ -4,7 +4,7 @@ pragma solidity ^0.8.10;
 import "../../PriceOracle.sol";
 import "../../CErc20.sol";
 
-contract CCNotePriceOracle is PriceOracle {
+contract VCNotePriceOracle is PriceOracle {
 
     address public immutable cnote;
 
@@ -14,7 +14,7 @@ contract CCNotePriceOracle is PriceOracle {
 
     function getUnderlyingPrice(CToken cToken) public override view returns (uint) {
         address _underlying = CErc20(address(cToken)).underlying();
-        require(_underlying == cnote, "CCNotePriceOracle: not cnote");
+        require(_underlying == cnote, "VCNotePriceOracle: not cnote");
         (bool success, bytes memory returndata) = _underlying.staticcall(abi.encodeWithSignature("exchangeRateStored()"));
         if (success) {
             return uint256(bytes32(returndata));
@@ -25,7 +25,7 @@ contract CCNotePriceOracle is PriceOracle {
                     revert(add(32, returndata), returndata_size)
                 }
             } else {
-                revert("CCNotePriceOracle: no underlying price");
+                revert("VCNotePriceOracle: no underlying price");
             }
         }
     }

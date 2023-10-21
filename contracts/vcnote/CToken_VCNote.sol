@@ -13,7 +13,7 @@ import "../ExponentialNoError.sol";
  * @notice Abstract base for CTokens
  * @author Compound
  */
-abstract contract CToken_CCNote is CTokenInterface, ExponentialNoError, TokenErrorReporter {
+abstract contract CToken_VCNote is CTokenInterface, ExponentialNoError, TokenErrorReporter {
     /**
      * @notice Initialize the money market
      * @param comptroller_ The address of the Comptroller

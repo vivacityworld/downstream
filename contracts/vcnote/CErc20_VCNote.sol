@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BSD-3-Clause
 pragma solidity ^0.8.10;
 
-import "./CToken_CCNote.sol";
+import "./CToken_VCNote.sol";
 
 interface CompLike {
     function delegate(address delegatee) external;
@@ -12,7 +12,7 @@ interface CompLike {
  * @notice CTokens which wrap an EIP-20 underlying
  * @author Compound
  */
-contract CErc20_CCNote is CToken_CCNote, CErc20Interface {
+contract CErc20_VCNote is CToken_VCNote, CErc20Interface {
     /**
      * @notice Initialize the new money market
      * @param underlying_ The address of the underlying asset

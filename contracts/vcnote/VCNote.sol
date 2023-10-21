@@ -1,15 +1,16 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.10;
 
-import "./CErc20Delegate_CCNote.sol";
+import "./CErc20Delegate_VCNote.sol";
 import "./interfaces/ILendingLedger.sol";
+import "../_interfaces/ITurnstile.sol";
 
 /**
- * @title CCNote Contracts
+ * @title VCNote Contracts
  * @notice CTokens which wrap an cNOTE underlying and are delegated to
  * @dev This contract override multiple functions in CToken for cNote liquidity tracking and underlying token check
  */
-contract CCNote is CErc20Delegate_CCNote {
+contract VCNote is CErc20Delegate_VCNote {
 
     // ==============================
     // ======== Variables ===========
@@ -27,8 +28,18 @@ contract CCNote is CErc20Delegate_CCNote {
      * @param _lendingLedger Address of the lending ledger
      */
     function setLendingLedger(address _lendingLedger) external {
-        require(msg.sender == admin, "CCNote::setLendingLedger: only admin can set lendingLedger");
+        require(msg.sender == admin, "VCNote::setLendingLedger: only admin can set lendingLedger");
         lendingLedger = _lendingLedger;
+    }
+
+    /**
+     * @notice  Assign for CSR
+     * @param   turnstile  Address of turnstile contract
+     * @param   tokenId    tokenId which will collect fees
+     */
+    function assignForCSR(address turnstile, uint256 tokenId) external {
+        require(admin == msg.sender, "VCNote::assignForCSR: only admin");
+        ITurnstile(turnstile).assign(tokenId);
     }
 
     // ==============================
@@ -68,6 +79,7 @@ contract CCNote is CErc20Delegate_CCNote {
      */
     function syncLendingLedger(address target) public {
         if (lendingLedger == address(0)) return;
+        accrueInterest();
         
         uint lastLiquidity = getLastLiquidity(target);
         uint currentLiquidity = getStoredBalanceOfUnderlying(target);

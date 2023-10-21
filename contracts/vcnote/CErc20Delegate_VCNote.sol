@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: BSD-3-Clause
 pragma solidity ^0.8.10;
 
-import "./CErc20_CCNote.sol";
+import "./CErc20_VCNote.sol";
 
 /**
  * @title Compound's CErc20Delegate Contract
  * @notice CTokens which wrap an EIP-20 underlying and are delegated to
  * @author Compound
  */
-contract CErc20Delegate_CCNote is CErc20_CCNote, CDelegateInterface {
+contract CErc20Delegate_VCNote is CErc20_VCNote, CDelegateInterface {
     /**
      * @notice Construct an empty delegate
      */
