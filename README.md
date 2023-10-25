@@ -57,3 +57,24 @@ Vivacity looks at this whitelist to determine who can own the `cRWAToken`. This 
 The Vivacity comptroller must know the price of the RWA tokens in order to calculate an account's standing. Each RWA issuer will publish prices of RWA Tokens to an oracle contract on chain. 
 
 The comptroller looks at `PriceOracleRouter.sol` to get the price of each cRWAToken. `PriceOracleRouter` will route each cRWAToken to the correct price oracle. It is expected that the price oracle for each cRWAToken will be provided and managed by the RWA issuers themselves.
+
+## Staking
+
+Staking plays a role in depositing tokens and receiving voting power from Llama governance. https://docs.llama.xyz/
+
+Llama is an onchain governance and access control framework. It defines roles and permissions for executing transactions(called actions). This document describes how action is progressed and state changes depending on the result for every step. Actions are proposed, executable transactions that can be initiated by policyholders.
+https://docs.llama.xyz/framework/actions#action-state
+
+Proposer is requested to lock the amount of token decided by admin(setDeposit).  Withdrawal process is not triggered, restricted by Llama’s interface. Therefore, the proposer should handle the withdrawal process manually. The withdrawal outcome is determined by the state of progress(repo llama/src/lib/Enums.sol). If executed successfully, the amount deposited will be returned. But if canceled, failed and expired, it will be reserved in contract.
+
+## Vesting
+
+Vesting distributes a certain amount of token supply based on schedule. Contract has a structure for storing wheezing schedules(struct Vesting). Vivacity uses a linear vesting schedule that releases the vested tokens in a linear amount and time. 
+
+Owner can decide related vesting parameter through
+add()
+remove()
+transfer()
+
+Vested account can withdraw through
+release()
