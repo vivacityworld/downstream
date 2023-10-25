@@ -12,8 +12,6 @@ Total SLoC: 265
 
 | Contract                             | SLOC | Purpose                                                                                                                                            |
 | ------------------------------------ | ---- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Comptroller.sol                      | 2    | Change parameters - closeFactorMaxMantissa, collateralFactorMaxMantissa                                                                            |
-| rwa/CRWAToken.sol                    | 10   | Change interfaces & parameter - minimumLiquidationUSD                                                                                              |
 | CCNote.sol                           | 42   | CCNote is a contract that enables cNote to be used as borrowing asset in the Vivacity, details in [ccnote/CCNote.md](./contracts/ccnote/CCNote.md) |
 | ccnote/oracle/CCNotepPriceOracle.sol | 16   | Convert cNote price to Note price, Note price is fixed as $1                                                                                       |
 | PriceOracleRouter.sol                | 14   | Integrate multiple oracle interfafces                                                                                                              |
