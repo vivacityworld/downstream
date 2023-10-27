@@ -190,15 +190,15 @@ contract Staking is Upgradeable {
         ILlamaCore.ActionState state = ILlamaCore(ls.llamaCore).getActionState(actionInfo);
 
         if (state == ILlamaCore.ActionState.Executed) {
-            ss.lockedBalances[msg.sender] -= proposal.deposit;
+            ss.lockedBalances[proposal.proposer] -= proposal.deposit;
         } else if (state == ILlamaCore.ActionState.Canceled || state == ILlamaCore.ActionState.Failed || state == ILlamaCore.ActionState.Expired) {
-            uint256 currentBalance = ss.balances[msg.sender];
+            uint256 currentBalance = ss.balances[proposal.proposer];
 
-            ss.lockedBalances[msg.sender] -= proposal.deposit;
-            ss.balances[msg.sender] -= proposal.deposit;
+            ss.lockedBalances[proposal.proposer] -= proposal.deposit;
+            ss.balances[proposal.proposer] -= proposal.deposit;
             ss.reserve += proposal.deposit;
             
-            _moveDelegates(proposal.proposer, currentBalance, proposal.proposer, ss.balances[msg.sender]);
+            _moveDelegates(proposal.proposer, currentBalance, proposal.proposer, ss.balances[proposal.proposer]);
         } else {
             revert ActiveProposal(actionId);
         }
