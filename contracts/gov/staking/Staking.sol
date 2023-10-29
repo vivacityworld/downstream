@@ -83,12 +83,13 @@ contract Staking is Upgradeable {
     // ======== Admin Functions ========
     // =================================
 
-    function setLlama(address llamaCore, address llamaPolicy, address stakingModuleStrategy, uint8 stakingModuleRole, uint8 stakerRole) external {
+    function setLlama(address llamaCore, address llamaPolicy, address stakingModuleStrategy, address stakerStrategy, uint8 stakingModuleRole, uint8 stakerRole) external {
         if (msg.sender != getAdmin()) revert Unauthorized(msg.sender);
         LlamaStorage storage ls = LlamaStorageLib.get();
         ls.llamaCore = llamaCore;
         ls.llamaPolicy = llamaPolicy;
         ls.stakingModuleStrategy = stakingModuleStrategy;
+        ls.stakerStrategy = stakerStrategy;
         ls.stakingModuleRole = stakingModuleRole;
         ls.stakerRole = stakerRole;
     }
