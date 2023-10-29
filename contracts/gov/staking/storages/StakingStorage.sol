@@ -14,6 +14,8 @@ struct StakingStorage {
 struct Proposal {
     address proposer;
     uint96 deposit;
+    uint8 stakingModuleRole;
+    address stakerStrategy;
 }
 
 library StakingStorageLib {

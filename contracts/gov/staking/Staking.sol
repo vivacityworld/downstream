@@ -162,7 +162,7 @@ contract Staking is Upgradeable {
 
         LlamaStorage storage ls = LlamaStorageLib.get();
         actionId = ILlamaCore(ls.llamaCore).createAction(ls.stakingModuleRole, ls.stakerStrategy, target, 0, data, description);
-        ss.proposals[actionId] = Proposal(msg.sender, ss.deposit);
+        ss.proposals[actionId] = Proposal(msg.sender, ss.deposit, ls.stakingModuleRole, ls.stakerStrategy);
 
         emit Propose(msg.sender, actionId, target, data, description);
     }
@@ -181,8 +181,8 @@ contract Staking is Upgradeable {
         ILlamaCore.ActionInfo memory actionInfo = ILlamaCore.ActionInfo({
             id: actionId,
             creator: address(this),
-            creatorRole: ls.stakingModuleRole,
-            strategy: ls.stakerStrategy,
+            creatorRole: proposal.stakingModuleRole,
+            strategy: proposal.stakerStrategy,
             target: target,
             value: 0,
             data: data
