@@ -193,12 +193,13 @@ contract Staking is Upgradeable {
             ss.lockedBalances[proposal.proposer] -= proposal.deposit;
         } else if (state == ILlamaCore.ActionState.Canceled || state == ILlamaCore.ActionState.Failed || state == ILlamaCore.ActionState.Expired) {
             uint256 currentBalance = ss.balances[proposal.proposer];
+            address currentDelegatee = ss.delegates[proposal.proposer];
 
             ss.lockedBalances[proposal.proposer] -= proposal.deposit;
             ss.balances[proposal.proposer] -= proposal.deposit;
             ss.reserve += proposal.deposit;
             
-            _moveDelegates(proposal.proposer, currentBalance, proposal.proposer, ss.balances[proposal.proposer]);
+            _moveDelegates(currentDelegatee, currentBalance, currentDelegatee, ss.balances[proposal.proposer]);
         } else {
             revert ActiveProposal(actionId);
         }
