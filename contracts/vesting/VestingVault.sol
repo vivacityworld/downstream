@@ -63,6 +63,7 @@ contract VestingVault is Ownable {
         for (uint256 i = 0; i < _account.length; i++) {
             require(_account[i] != address(0), "VestingVault: beneficiary is zero address");
             require(_amount[i] > 0, "VestingVault: amount should be greater than 0");
+            require(_start[i] >= block.timestamp, "VestingVault: start should be greater than current timestamp");
             require(_duration[i] > 0, "VestingVault: duration should be greater than 0");
             vestings.push(Vesting(_account[i], _start[i], _duration[i], _amount[i], 0));
         }
