@@ -37,7 +37,7 @@ contract VestingVault is Ownable {
     // ======== Events ==============
     // ==============================
 
-    event Add(address[] indexed account, uint64[] start, uint64[] duration, uint256[] amount);
+    event Add(uint256[] vestingIds, address[] indexed account, uint64[] start, uint64[] duration, uint256[] amount);
     event Remove(uint256 indexed vestingId, uint256 rest);
     event Released(address indexed account, uint256 amount);
     event Transfer(address indexed to, uint256 amount);
@@ -60,14 +60,16 @@ contract VestingVault is Ownable {
      */
     function add(address[] memory _account, uint64[] memory _start, uint64[] memory _duration, uint256[] memory _amount) public virtual onlyOwner {
         require(_account.length == _start.length && _account.length == _duration.length && _account.length == _amount.length, "VestingVault: arrays length mismatch");
+        uint256[] memory _vestingIds = new uint256[](_account.length);
         for (uint256 i = 0; i < _account.length; i++) {
             require(_account[i] != address(0), "VestingVault: beneficiary is zero address");
             require(_amount[i] > 0, "VestingVault: amount should be greater than 0");
             require(_start[i] >= block.timestamp, "VestingVault: start should be greater than current timestamp");
             require(_duration[i] > 0, "VestingVault: duration should be greater than 0");
             vestings.push(Vesting(_account[i], _start[i], _duration[i], _amount[i], 0));
+            _vestingIds[i] = vestings.length - 1;
         }
-        emit Add(_account, _start, _duration, _amount);
+        emit Add(_vestingIds, _account, _start, _duration, _amount);
     }
 
     /**
