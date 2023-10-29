@@ -45,6 +45,7 @@ contract Staking is Upgradeable {
     error InsufficientBalance(uint256 balance, uint256 amount);
     error ActiveProposal(uint256 actionId);
     error ExceedMaxLocked(uint256 locked, uint256 maxLocked);
+    error AlreadyWithdrawn(uint256 actionId);
     // error Unauthorized(address account);
 
     // ==============================
@@ -181,7 +182,10 @@ contract Staking is Upgradeable {
     function withdraw(uint256 actionId, address target, bytes calldata data) external {
         StakingStorage storage ss = StakingStorageLib.get();
         Proposal memory proposal = ss.proposals[actionId];
-
+        if (proposal.deposit == 0) {
+            revert AlreadyWithdrawn(actionId);
+        }
+        
         LlamaStorage storage ls = LlamaStorageLib.get();
         ILlamaCore.ActionInfo memory actionInfo = ILlamaCore.ActionInfo({
             id: actionId,
