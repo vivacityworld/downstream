@@ -44,6 +44,7 @@ contract Staking is Upgradeable {
 
     error InsufficientBalance(uint256 balance, uint256 amount);
     error ActiveProposal(uint256 actionId);
+    error ExceedMaxLocked(uint256 locked, uint256 maxLocked);
     // error Unauthorized(address account);
 
     // ==============================
@@ -152,8 +153,11 @@ contract Staking is Upgradeable {
     * @param data Data of the proposal
     * @param description Description of the proposal
     */
-    function propose(address target, bytes calldata data, string memory description) external returns (uint256 actionId) {
+    function propose(address target, bytes calldata data, string memory description, uint256 maxLocked) external returns (uint256 actionId) {
         StakingStorage storage ss = StakingStorageLib.get();
+        if (maxLocked != 0 && ss.deposit > maxLocked) {
+            revert ExceedMaxLocked(ss.deposit, maxLocked);
+        }
 
         uint256 availableBalance = ss.balances[msg.sender] - ss.lockedBalances[msg.sender];
         if (availableBalance < ss.deposit) revert InsufficientBalance(availableBalance, ss.deposit);
