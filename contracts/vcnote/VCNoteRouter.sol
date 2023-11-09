@@ -7,7 +7,6 @@ import {CTokenInterface} from "../CTokenInterfaces.sol";
 import {IVCNote} from "./interfaces/IVCNote.sol";
 import {ICERC20} from "./interfaces/ICERC20.sol";
 
-
 /**
  * @title VCNote Router
  * @notice Contract for users to interact with NOTE instead of cNOTE
@@ -106,8 +105,8 @@ contract VCNoteRouter {
      * @param params BorrowPermitParams
      */
     function borrow(BorrowPermitParams memory params) external {
-        require(params.executor == msg.sender, "VCNoteRouter: invalid executor");
-        require(params.receiver == msg.sender, "VCNoteRouter: invalid receiver");
+        require(params.executor == address(this), "VCNoteRouter: invalid executor");
+        require(params.receiver == address(this), "VCNoteRouter: invalid receiver");
 
         // borrow cNote in vcNote
         uint256 balanceCNoteBefore = cNOTE.balanceOf(address(this));
