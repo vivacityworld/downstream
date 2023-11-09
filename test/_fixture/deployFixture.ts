@@ -31,6 +31,8 @@ import {
 	LlamaCore,
 	LlamaPolicy,
 	VivacityManageScript,
+	VCNoteRouter,
+	OffchainFundWhitelistRouter
 } from '../../typechain'
 import { LlamaAddress } from "../../scripts/types/deploy";
 
@@ -54,6 +56,7 @@ export interface Contracts {
 	ofPriceOracle: MockOffchainFundPriceOracle;
 	sdycPriceOracle: MockSDYCPriceOracle;
 	ofWhitelist: MockOffchainFundWhitelist,
+	ofWhitelistRouter: OffchainFundWhitelistRouter;
 	sdycWhitelist: MockSDYCWhitelist;
 	turnstile: MockTurnstile;
 	staking: Staking;
@@ -62,6 +65,7 @@ export interface Contracts {
 	vivaScript: VivacityManageScript;
 	stakerStrategy: string;
 	llama: LlamaAddress;
+	vcNoteRouter: VCNoteRouter;
 }
 
 const deployFixture = async () => {
@@ -85,12 +89,15 @@ const deployFixture = async () => {
 	const MockOffchainFundPriceOracleFactory = await ethers.getContractFactory("MockOffchainFundPriceOracle");
 	const MockSDYCPriceOracleFactory = await ethers.getContractFactory("MockSDYCPriceOracle");
 	const MockOffchainFundWhitelistFactory = await ethers.getContractFactory("MockOffchainFundWhitelist");
+	const MockOffchainFundWhitelistRouterFactory = await ethers.getContractFactory("OffchainFundWhitelistRouter");
 	const MockSDYCWhitelistFactory = await ethers.getContractFactory("MockSDYCWhitelist");
 
 	const OffchainFundPriceOracleRouterFactory = await ethers.getContractFactory("OffchainFundPriceOracleRouter");
 	const SDYCPriceOracleRouterFactory = await ethers.getContractFactory("SDYCPriceOracleRouter");
 
 	const MockTurnstileFactory = await ethers.getContractFactory("MockTurnstile");
+
+	const VCNoteRouter = await ethers.getContractFactory("VCNoteRouter");
 
 	//////////////////////////////////////
 	//      DEPLOY Mock Comptroller     //
@@ -100,6 +107,7 @@ const deployFixture = async () => {
 	const ofPriceOracle = await MockOffchainFundPriceOracleFactory.deploy(1e8);
 	const sdycPriceOracle = await MockSDYCPriceOracleFactory.deploy(1e8, 8);
 	const ofWhitelist = await MockOffchainFundWhitelistFactory.deploy();
+	const ofWhitelistRouter = await MockOffchainFundWhitelistRouterFactory.deploy();
 	const sdycWhitelist = await MockSDYCWhitelistFactory.deploy();
 
 	// token
@@ -238,6 +246,7 @@ const deployFixture = async () => {
 		llamaPolicy: policy.address,
 		llamaLens: llamaLens.address,
 		bootstrapStrategy: deployerStrategy,
+		coreTeamStrategy: stakingModuleStrategy,
 		stakingModuleStrategy: stakingModuleStrategy,
 		stakerStrategy: stakerStrategy,
 		llamaGovScript: llamaGovernanceScript.address,
@@ -377,44 +386,53 @@ const deployFixture = async () => {
 	/////////////////// SETUP LLAMA           ///////////////////
 	/////////////////////////////////////////////////////////////
 
-	const helper = await createLlamaBootstrapHelper(llama);
+	// const helper = await createLlamaBootstrapHelper(llama);
 
-	// role
-	const DEPLOY_ROLE = 1;
-	const STAKING_MODULE_ROLE = 2;
-	const STAKER_ROLE = 3;
+	// // role
+	// const DEPLOY_ROLE = 1;
+	// const STAKING_MODULE_ROLE = 2;
+	// const STAKER_ROLE = 3;
 
-	// grant permission to deploy for initial setting
-	await helper.setRolePermission(DEPLOY_ROLE, core, "setStrategyAuthorization(address,bool)", deployerStrategy);
-	await helper.setRolePermission(DEPLOY_ROLE, core, "setScriptAuthorization(address,bool)", deployerStrategy);
-	await helper.setRolePermission(DEPLOY_ROLE, vivacityManageScript, "multicall(bytes[])", deployerStrategy);
-	await helper.setRolePermission(DEPLOY_ROLE, llamaGovernanceScript, "aggregate(address[],bytes[])", deployerStrategy);
+	// console.log(0);
 
-	// authorize for using strategy
-	await helper.execute(core, "setStrategyAuthorization", [stakingModuleStrategy, true]);
-	await helper.execute(core, "setStrategyAuthorization", [stakerStrategy, true]);
+	// // grant permission to deploy for initial setting
+	// await helper.setRolePermission(DEPLOY_ROLE, core, "setStrategyAuthorization(address,bool)", deployerStrategy);
+	// await helper.setRolePermission(DEPLOY_ROLE, core, "setScriptAuthorization(address,bool)", deployerStrategy);
+	// await helper.setRolePermission(DEPLOY_ROLE, vivacityManageScript, "multicall(bytes[])", deployerStrategy);
+	// await helper.setRolePermission(DEPLOY_ROLE, llamaGovernanceScript, "aggregate(address[],bytes[])", deployerStrategy);
 
-	// authorize for using script
-	await helper.execute(core, "setScriptAuthorization", [llamaGovernanceScript.address, true]);
-	await helper.execute(core, "setScriptAuthorization", [vivacityManageScript.address, true]);
+	// console.log(2);
+	// // authorize for using strategy
+	// await helper.execute(core, "setStrategyAuthorization", [stakingModuleStrategy, true]);
+	// await helper.execute(core, "setStrategyAuthorization", [stakerStrategy, true]);
 
-	// grant permission to staking module role
-	// grant permission to staker role
-	// grant role to staking module
-	await helper.executeGovScript([
-		[policy, "setRolePermission", [STAKING_MODULE_ROLE, getPermission(policy, "setRoleHolder(uint8,address,uint96,uint64)", stakingModuleStrategy), true]],
-		[policy, "setRolePermission", [STAKING_MODULE_ROLE, getPermission(vivacityManageScript, "multicall(bytes[])", stakerStrategy), true]],
-		[policy, "setRolePermission", [STAKING_MODULE_ROLE, getPermission(llamaGovernanceScript, "aggregate(address[],bytes[])", stakerStrategy), true]],
-		[policy, "setRolePermission", [STAKER_ROLE, getPermission(vivacityManageScript, "multicall(bytes[])", stakerStrategy), true]],
-		[policy, "setRolePermission", [STAKER_ROLE, getPermission(llamaGovernanceScript, "aggregate(address[],bytes[])", stakerStrategy), true]],
-		[policy, "setRoleHolder", [STAKING_MODULE_ROLE, staking.address, 1, ethers.BigNumber.from(2).pow(64).sub(1)]],
-	]);
+	// // authorize for using script
+	// await helper.execute(core, "setScriptAuthorization", [llamaGovernanceScript.address, true]);
+	// await helper.execute(core, "setScriptAuthorization", [vivacityManageScript.address, true]);
+
+	// console.log(1);
+
+	// // grant permission to staking module role
+	// // grant permission to staker role
+	// // grant role to staking module
+	// await helper.executeGovScript([
+	// 	[policy, "setRolePermission", [STAKING_MODULE_ROLE, getPermission(policy, "setRoleHolder(uint8,address,uint96,uint64)", stakingModuleStrategy), true]],
+	// 	[policy, "setRolePermission", [STAKING_MODULE_ROLE, getPermission(vivacityManageScript, "multicall(bytes[])", stakerStrategy), true]],
+	// 	[policy, "setRolePermission", [STAKING_MODULE_ROLE, getPermission(llamaGovernanceScript, "aggregate(address[],bytes[])", stakerStrategy), true]],
+	// 	[policy, "setRolePermission", [STAKER_ROLE, getPermission(vivacityManageScript, "multicall(bytes[])", stakerStrategy), true]],
+	// 	[policy, "setRolePermission", [STAKER_ROLE, getPermission(llamaGovernanceScript, "aggregate(address[],bytes[])", stakerStrategy), true]],
+	// 	[policy, "setRoleHolder", [STAKING_MODULE_ROLE, staking.address, 1, ethers.BigNumber.from(2).pow(64).sub(1)]],
+	// ]);
+
+
 
 	const cOF = await ethers.getContractAt("CRWAToken", ofProxy.address);
 	const cSDYC = await ethers.getContractAt("CRWAToken", sdycProxy.address);
 	const compt = await ethers.getContractAt("Comptroller", unitroller.address);
 	const vcn = await ethers.getContractAt("VCNote", vcNoteProxy.address);
 	const cn = await ethers.getContractAt("CErc20Delegate", cNoteProxy.address);
+
+	const vcnr = await VCNoteRouter.deploy(note.address, cn.address, vcn.address);
 
 	return {
 		viva,
@@ -443,7 +461,9 @@ const deployFixture = async () => {
 		llamaPolicy: policy,
 		vivaScript: vivacityManageScript,
 		stakerStrategy,
-		llama
+		llama,
+		ofWhitelistRouter,
+		vcNoteRouter: vcnr,
 	}
 }
 

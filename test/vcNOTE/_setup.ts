@@ -61,6 +61,12 @@ export default async function setupVCNoteTest({ signer, borrower, receiver, cont
   await contracts.note.approve(contracts.cNote.address, mintAmount);
   await contracts.cNote.mint(mintAmount);
 
+  await contracts.of.mint(signer.address, mintAmount);
+  await contracts.of.approve(contracts.cOF.address, mintAmount);
+  await contracts.cOF.mint(mintAmount);
+
+  await contracts.comptroller.enterMarkets([contracts.cOF.address, contracts.vcNote.address]);
+
   // borrower - mint cNOTE
   await contracts.note.mint(borrower.address, mintAmount);
   await contracts.cNote.connect(borrower).mint(mintAmount);
@@ -74,8 +80,14 @@ export default async function setupVCNoteTest({ signer, borrower, receiver, cont
   await contracts.comptroller.connect(borrower).enterMarkets([contracts.cOF.address, contracts.vcNote.address]);
 
   // borrow
-  await contracts.vcNote.connect(borrower).borrow(borrowAmount);
+  await contracts.vcNote.connect(borrower)["borrow(uint256)"](borrowAmount);
 
   // set price for liquidation
   await contracts.ofPriceOracle.setPrice(0.5e8);
+
+  await contracts.cOF.setWhitelistRouter(contracts.whitelistRouter.address);
+  await contracts.whitelistRouter.setWhitelistContract(contracts.of.address, contracts.ofWhitelistRouter.address);
+  await contracts.ofWhitelistRouter.setWhitelistContract(contracts.of.address, contracts.ofWhitelist.address);
+  await contracts.ofWhitelist.setWhitelisted(contracts.vcNoteRouter.address, true);
+  await contracts.ofWhitelist.setWhitelisted(signer.address, true);
 }

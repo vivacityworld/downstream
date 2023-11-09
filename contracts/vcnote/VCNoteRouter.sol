@@ -101,7 +101,7 @@ contract VCNoteRouter {
     }
 
     /**
-     * @notice borrow NOTE
+     * @notice borrow cNOTE, receive NOTE
      * @param params BorrowPermitParams
      */
     function borrow(BorrowPermitParams memory params) external {
@@ -122,32 +122,5 @@ contract VCNoteRouter {
         NOTE.transfer(msg.sender, redeemedNote);
 
         emit Borrow(msg.sender, redeemedNote);
-    }
-
-    /**
-     * @notice liquidate NOTE
-     * @param borrower Borrower address
-     * @param repayAmount Amount of NOTE to repay
-     * @param cTokenCollateral Address of cTokenCollateral
-     */
-    function liquidateBorrow(address borrower, uint repayAmount, CTokenInterface cTokenCollateral) external {
-
-        // transfer NOTE from the user to router contract
-        NOTE.transferFrom(msg.sender, address(this), repayAmount);
-
-        // convert NOTE to cNOTE
-        uint256 balanceCNoteBefore = cNOTE.balanceOf(address(this));
-        cNOTE.mint(repayAmount);
-        uint256 mintedCNote = cNOTE.balanceOf(address(this)) - balanceCNoteBefore;
-        
-        // liquidateBorrow
-        uint256 balanceCollateralBefore = cTokenCollateral.balanceOf(address(this));
-        vcNOTE.liquidateBorrow(borrower, mintedCNote, cTokenCollateral);
-        uint256 mintedCollateral = cTokenCollateral.balanceOf(address(this)) - balanceCollateralBefore;
-
-        // transfer collateral to user
-        cTokenCollateral.transfer(msg.sender, mintedCollateral);
-
-        emit LiquidateBorrow(msg.sender, repayAmount, mintedCNote, address(cTokenCollateral), mintedCollateral);
     }
 }
