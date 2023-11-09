@@ -129,7 +129,7 @@ describe("Staking", function () {
 
   it("[error] propose", async function () {
     // ========== action & validation =========
-    await expect(staking.connect(delegatee).propose(vivaScript.address, calldata, "Governance Proposal 1"))
+    await expect(staking.connect(delegatee).propose(vivaScript.address, calldata, "Governance Proposal 1", ethers.constants.MaxUint256))
       .revertedWith("InsufficientBalance")
   });
 
@@ -142,7 +142,7 @@ describe("Staking", function () {
     const lockedBalance = await staking.lockedBalanceOf(signer.address);
 
     // ================ action ================
-    await staking.propose(vivaScript.address, calldata, "Governance Proposal 1");
+    await staking.propose(vivaScript.address, calldata, "Governance Proposal 1", ethers.constants.MaxUint256);
 
     // ========== action & validation =========
     await expect(staking.undelegate(await staking.balanceOf(signer.address))).revertedWith("InsufficientBalance");
@@ -162,7 +162,7 @@ describe("Staking", function () {
 
   it("withdraw when proposal passed", async function () {
     // ================ params ================
-    await staking.propose(vivaScript.address, calldata, "Governance Proposal 1");
+    await staking.propose(vivaScript.address, calldata, "Governance Proposal 1", ethers.constants.MaxUint256);
     const actionId = (await contracts.llamaCore.actionsCount()).sub(1);
     const actionInfo = { id: actionId, creator: staking.address, creatorRole: 2, strategy: stakerStrategy, target: vivaScript.address, value: 0, data: calldata };
     const deposit = await staking["getDeposit(uint256)"](actionId);
@@ -185,7 +185,7 @@ describe("Staking", function () {
 
   it("withdraw when proposal rejected", async function () {
     // ================ params ================
-    await staking.propose(vivaScript.address, calldata, "Governance Proposal 1");
+    await staking.propose(vivaScript.address, calldata, "Governance Proposal 1", ethers.constants.MaxUint256);
     const actionId = (await contracts.llamaCore.actionsCount()).sub(1);
     const deposit = await staking["getDeposit(uint256)"](actionId);
 
