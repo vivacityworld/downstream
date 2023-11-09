@@ -1,9 +1,14 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.10;
 
-import "./CErc20Delegate_VCNote.sol";
-import "./interfaces/ILendingLedger.sol";
-import "../_interfaces/ITurnstile.sol";
+import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
+import {VCNoteStorage, VCNoteStorageLib} from "./storages/VCNoteStorage.sol";
+import {BorrowPermitParams} from "./libraries/BorrowPermitParams.sol";
+
+import {CErc20Delegate_VCNote} from "./CErc20Delegate_VCNote.sol";
+import {ILendingLedger} from "./interfaces/ILendingLedger.sol";
+import {ITurnstile} from "../_interfaces/ITurnstile.sol";
 
 /**
  * @title VCNote Contracts
@@ -11,13 +16,6 @@ import "../_interfaces/ITurnstile.sol";
  * @dev This contract override multiple functions in CToken for cNote liquidity tracking and underlying token check
  */
 contract VCNote is CErc20Delegate_VCNote {
-
-    // ==============================
-    // ======== Variables ===========
-    // ==============================
-
-    // address of Neofinance Coodinator's lending ledger 
-    address public lendingLedger;
 
     // ==============================
     // ======== Admin Functions =====
@@ -29,7 +27,7 @@ contract VCNote is CErc20Delegate_VCNote {
      */
     function setLendingLedger(address _lendingLedger) external {
         require(msg.sender == admin, "VCNote::setLendingLedger: only admin can set lendingLedger");
-        lendingLedger = _lendingLedger;
+        VCNoteStorageLib.setLendingLedger(_lendingLedger);
     }
 
     /**
@@ -40,6 +38,105 @@ contract VCNote is CErc20Delegate_VCNote {
     function assignForCSR(address turnstile, uint256 tokenId) external {
         require(admin == msg.sender, "VCNote::assignForCSR: only admin");
         ITurnstile(turnstile).assign(tokenId);
+    }
+
+    // ==============================
+    // ======== View Functions ======
+    // ==============================
+
+    function getLendingLedger() external view returns (address) {
+        return VCNoteStorageLib.getLendingLedger();
+    }
+
+    function getNonce(address account) external view returns (uint256) {
+        return VCNoteStorageLib.getNonce(account);
+    }
+
+
+    // ==============================
+    // ====== Borrow Functions ======
+    // ==============================
+
+    /**
+     * @notice borrow function
+     * @param borrowAmount The amount of cNOTE to borrow
+     * @param receiver The address to receive the borrowed cNOTE
+     */
+    function borrow(uint borrowAmount, address payable receiver) external returns (uint) {
+        borrowInternal(borrowAmount, receiver);
+        return NO_ERROR;
+    }
+
+    function borrowInternal(uint borrowAmount, address payable receiver) internal nonReentrant {
+        accrueInterest();
+        // borrowFresh emits borrow-specific logs on errors, so we don't need to
+        borrowFresh(payable(msg.sender), borrowAmount, receiver);
+    }
+
+    function borrowFresh(address payable borrower, uint borrowAmount, address payable receiver) internal {
+        /* Fail if borrow not allowed */
+        uint allowed = comptroller.borrowAllowed(address(this), borrower, borrowAmount);
+        if (allowed != 0) {
+            revert BorrowComptrollerRejection(allowed);
+        }
+
+        /* Verify market's block number equals current block number */
+        if (accrualBlockNumber != getBlockNumber()) {
+            revert BorrowFreshnessCheck();
+        }
+
+        /* Fail gracefully if protocol has insufficient underlying cash */
+        if (getCashPrior() < borrowAmount) {
+            revert BorrowCashNotAvailable();
+        }
+
+        /*
+         * We calculate the new borrower and total borrow balances, failing on overflow:
+         *  accountBorrowNew = accountBorrow + borrowAmount
+         *  totalBorrowsNew = totalBorrows + borrowAmount
+         */
+        uint accountBorrowsPrev = borrowBalanceStoredInternal(borrower);
+        uint accountBorrowsNew = accountBorrowsPrev + borrowAmount;
+        uint totalBorrowsNew = totalBorrows + borrowAmount;
+
+        /////////////////////////
+        // EFFECTS & INTERACTIONS
+        // (No safe failures beyond this point)
+
+        /*
+         * We write the previously calculated values into storage.
+         *  Note: Avoid token reentrancy attacks by writing increased borrow before external transfer.
+        `*/
+        accountBorrows[borrower].principal = accountBorrowsNew;
+        accountBorrows[borrower].interestIndex = borrowIndex;
+        totalBorrows = totalBorrowsNew;
+
+        /*
+         * We invoke doTransferOut for the borrower and the borrowAmount.
+         *  Note: The cToken must handle variations between ERC-20 and ETH underlying.
+         *  On success, the cToken borrowAmount less of cash.
+         *  doTransferOut reverts if anything goes wrong, since we can't be sure if side effects occurred.
+         */
+        doTransferOut(receiver, borrowAmount);
+
+        /* We emit a Borrow event */
+        emit Borrow(borrower, borrowAmount, accountBorrowsNew, totalBorrowsNew);
+    }
+
+    /**
+     * @notice borrow function by permit
+     * @param params The params of borrow permit
+     */
+    function borrowPermit(BorrowPermitParams memory params) external returns (uint) {
+        borrowPermitInternal(params);
+        return NO_ERROR;
+    }
+
+    function borrowPermitInternal(BorrowPermitParams memory params) internal nonReentrant {
+        params.validate();
+        accrueInterest();
+        // borrowFresh emits borrow-specific logs on errors, so we don't need to
+        borrowFresh(params.borrower, params.borrowAmount, params.receiver);
     }
 
     // ==============================
@@ -78,10 +175,11 @@ contract VCNote is CErc20Delegate_VCNote {
      * @param target Address of the account to sync
      */
     function syncLendingLedger(address target) public {
+        address lendingLedger  = VCNoteStorageLib.getLendingLedger();
         if (lendingLedger == address(0)) return;
         accrueInterest();
         
-        uint lastLiquidity = getLastLiquidity(target);
+        uint lastLiquidity = getLastLiquidity(lendingLedger, target);
         uint currentLiquidity = getStoredBalanceOfUnderlying(target);
 
         if (lastLiquidity == currentLiquidity) return; 
@@ -100,7 +198,7 @@ contract VCNote is CErc20Delegate_VCNote {
      * @param account Address of the account
      * @return liquidity liquidity of the account
      */
-    function getLastLiquidity(address account) internal view returns (uint256) {
+    function getLastLiquidity(address lendingLedger, address account) internal view returns (uint256) {
         uint256 lastEpoch = ILendingLedger(lendingLedger).lendingMarketBalancesEpoch(address(this), account);
         return ILendingLedger(lendingLedger).lendingMarketBalances(address(this), account, lastEpoch);
     }
