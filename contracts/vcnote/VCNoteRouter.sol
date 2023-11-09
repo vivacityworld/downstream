@@ -1,104 +1,154 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.20;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {BorrowPermitParams} from "./libraries/BorrowPermitParams.sol";
-import {CErc20, CTokenInterface} from "../CErc20.sol";
-import {VCNote} from "./VCNote.sol";
-import {Upgradeable} from "../_proxy/Upgradeable.sol";
-import {VCNoteRouterStorageLib, VCNoteRouterStorage} from "./storages/VCNoteRouterStorage.sol";
+import {CTokenInterface} from "../CTokenInterfaces.sol";
+import {IVCNote} from "./interfaces/IVCNote.sol";
+import {ICERC20} from "./interfaces/ICERC20.sol";
 
-contract VivaRouter is Upgradeable {
 
-    function initialize(address _note, address _cNOTE, address _vcNOTE) external initializer {
-        VCNoteRouterStorageLib.set(_note, _cNOTE, _vcNOTE);
+/**
+ * @title VCNote Router
+ * @notice Contract for users to interact with NOTE instead of cNOTE
+ * @dev This contract converts Note to cNOTE and do all the action on behalf of user.
+ */
+contract VCNoteRouter {
 
-        IERC20(_note).approve(_cNOTE, type(uint256).max);
+    event Mint(address indexed user, uint256 inputNote, uint256 outputVCNote);
+    event Redeem(address indexed user, uint256 inputVCNote, uint256 outputNote);
+    event Borrow(address indexed user, uint256 outputNote);
+    event RepayBorrow(address indexed user, uint256 inputNote, uint256 repaidCNote);
+    event LiquidateBorrow(address indexed user, uint256 inputNote, uint256 repaidCNote, address collateral, uint256 outputCollateral);
+
+    IVCNote public immutable vcNOTE;
+    ICERC20 public immutable cNOTE;
+    IERC20 public immutable NOTE;
+
+    constructor (address _NOTE, address _cNOTE, address _vcNOTE) {
+        NOTE = IERC20(_NOTE);
+        cNOTE = ICERC20(_cNOTE);
+        vcNOTE = IVCNote(_vcNOTE);
+
+        IERC20(_NOTE).approve(_cNOTE, type(uint256).max);
         IERC20(_cNOTE).approve(_vcNOTE, type(uint256).max);
     }
 
+    /**
+     * @notice mint vcNOTE from NOTE
+     * @param amount Amount of NOTE to mint
+     */
     function mint(uint256 amount) external {
-        VCNoteRouterStorage memory s = VCNoteRouterStorageLib.get();
+        // transfer NOTE from the user to router contract
+        NOTE.transferFrom(msg.sender, address(this), amount);
 
-        uint256 balanceCNoteBefore = IERC20(s.cNOTE).balanceOf(address(this));
-        uint256 balanceVCNoteBefore = IERC20(s.vcNOTE).balanceOf(address(this));
+        // convert NOTE to cNOTE
+        uint256 balanceCNoteBefore = cNOTE.balanceOf(address(this));
+        cNOTE.mint(amount);
+        uint256 mintedCNote = cNOTE.balanceOf(address(this)) - balanceCNoteBefore;
 
-        // tansfer NOTE from the user to router contract
-        IERC20(s.NOTE).transferFrom(msg.sender, address(this), amount);
-        // mint cNOTE in clm
-        CErc20(s.cNOTE).mint(amount);
+        // convert cNOTE to vcNOTE
+        uint256 balanceVCNoteBefore = vcNOTE.balanceOf(address(this));
+        vcNOTE.mint(mintedCNote);
+        uint256 mintedVCNote = vcNOTE.balanceOf(address(this)) - balanceVCNoteBefore;
 
-        // mint vcNOTE in vivacity
-        uint256 mintedCNote = IERC20(s.cNOTE).balanceOf(address(this)) - balanceCNoteBefore;
-        CErc20(s.vcNOTE).mint(mintedCNote);
+        // transfer vcNOTE to user
+        vcNOTE.transfer(msg.sender, mintedVCNote);
 
-        // transfer vcNOTE to the user
-        uint256 mintedVCNote = IERC20(s.vcNOTE).balanceOf(address(this)) - balanceVCNoteBefore;
-        IERC20(s.vcNOTE).transfer(msg.sender, mintedVCNote);
+        emit Mint(msg.sender, amount, mintedVCNote);
     }
     
+    /**
+     * @notice redeem vcNOTE, receive NOTE
+     * @param amount Amount of vcNOTE to redeem
+     */
     function redeem(uint256 amount) external {
-        VCNoteRouterStorage memory s = VCNoteRouterStorageLib.get();
-
-        uint256 balanceNoteBefore = IERC20(s.cNOTE).balanceOf(address(this));
-        uint256 balanceCNoteBefore = IERC20(s.cNOTE).balanceOf(address(this));
-
         // transfer vcNOTE from the user to router contract
-        IERC20(s.vcNOTE).transferFrom(msg.sender, address(this), amount);
+        vcNOTE.transferFrom(msg.sender, address(this), amount);
 
-        // redeem vcNOTE in vivacity, get cNOTE
-        CErc20(s.vcNOTE).redeem(amount);
-
-        // redeem cNOTE in clm, get NOTE
-        uint256 redeemedCNote = IERC20(s.cNOTE).balanceOf(address(this)) - balanceCNoteBefore;
-        CErc20(s.cNOTE).redeem(redeemedCNote);
+        // convert vcNOTE to cNOTE
+        uint256 balanceCNoteBefore = cNOTE.balanceOf(address(this));
+        vcNOTE.redeem(amount);
+        uint256 redeemedCNote = cNOTE.balanceOf(address(this)) - balanceCNoteBefore;
+        
+        // convert cNOTE to NOTE
+        uint256 balanceNoteBefore = NOTE.balanceOf(address(this));
+        cNOTE.redeem(redeemedCNote);
+        uint256 redeemedNote = NOTE.balanceOf(address(this)) - balanceNoteBefore;
 
         // transfer NOTE to the user
-        uint256 redeemedNote = IERC20(s.NOTE).balanceOf(address(this)) - balanceNoteBefore;
-        IERC20(s.NOTE).transfer(msg.sender, redeemedNote);
+        NOTE.transfer(msg.sender, redeemedNote);
+
+        emit Redeem(msg.sender, amount, redeemedNote);
     }
 
+    /**
+     * @notice repay NOTE
+     * @param amount Amount of NOTE to repayBorrow
+     */
     function repayBorrow(uint256 amount) external {
-        VCNoteRouterStorage memory s = VCNoteRouterStorageLib.get();
-
-        uint256 balanceCNoteBefore = IERC20(s.cNOTE).balanceOf(address(this));
         // transfer NOTE from the user to router contract
-        IERC20(s.NOTE).transferFrom(msg.sender, address(this), amount);
+        NOTE.transferFrom(msg.sender, address(this), amount);
 
-        // mint cNOTE in clm
-        CErc20(s.cNOTE).mint(amount);
+        // convert NOTE to cNOTE
+        uint256 balanceCNoteBefore = cNOTE.balanceOf(address(this));
+        cNOTE.mint(amount);
+        uint256 mintedCNote = cNOTE.balanceOf(address(this)) - balanceCNoteBefore;
 
-        // repayBorrow in clm
-        uint256 mintedCNote = IERC20(s.cNOTE).balanceOf(address(this)) - balanceCNoteBefore;
-        CErc20(s.vcNOTE).repayBorrowBehalf(msg.sender, mintedCNote);
+        // repayBorrow
+        vcNOTE.repayBorrowBehalf(msg.sender, mintedCNote);
+
+        emit RepayBorrow(msg.sender, amount, mintedCNote);
     }
 
+    /**
+     * @notice borrow NOTE
+     * @param params BorrowPermitParams
+     */
     function borrow(BorrowPermitParams memory params) external {
-        VCNoteRouterStorage memory s = VCNoteRouterStorageLib.get();
+        require(params.executor == msg.sender, "VCNoteRouter: invalid executor");
+        require(params.receiver == msg.sender, "VCNoteRouter: invalid receiver");
 
-        uint256 balanceBefore = IERC20(s.cNOTE).balanceOf(address(this));
-        // borrow in clm
-        VCNote(s.vcNOTE).borrowPermit(params);
+        // borrow cNote in vcNote
+        uint256 balanceCNoteBefore = cNOTE.balanceOf(address(this));
+        vcNOTE.borrowPermit(params);
+        uint256 borrowedCNote = cNOTE.balanceOf(address(this)) - balanceCNoteBefore;
+        
+        // convert cNote to Note
+        uint256 balanceNoteBefore = NOTE.balanceOf(address(this));
+        cNOTE.redeem(borrowedCNote);
+        uint256 redeemedNote = NOTE.balanceOf(address(this)) - balanceNoteBefore;
+        
+        // transfer Note to receiver
+        NOTE.transfer(msg.sender, redeemedNote);
 
-        uint256 balanceAfter = IERC20(s.cNOTE).balanceOf(address(this));
-        IERC20(s.cNOTE).transfer(msg.sender, balanceAfter - balanceBefore);
+        emit Borrow(msg.sender, redeemedNote);
     }
 
+    /**
+     * @notice liquidate NOTE
+     * @param borrower Borrower address
+     * @param repayAmount Amount of NOTE to repay
+     * @param cTokenCollateral Address of cTokenCollateral
+     */
     function liquidateBorrow(address borrower, uint repayAmount, CTokenInterface cTokenCollateral) external {
-        VCNoteRouterStorage memory s = VCNoteRouterStorageLib.get();
 
-        uint256 balanceCNoteBefore = IERC20(s.cNOTE).balanceOf(address(this));
-        uint256 balanceCollateralBefore = IERC20(address(cTokenCollateral)).balanceOf(address(this));
+        // transfer NOTE from the user to router contract
+        NOTE.transferFrom(msg.sender, address(this), repayAmount);
 
-        IERC20(s.NOTE).transferFrom(msg.sender, address(this), repayAmount);
+        // convert NOTE to cNOTE
+        uint256 balanceCNoteBefore = cNOTE.balanceOf(address(this));
+        cNOTE.mint(repayAmount);
+        uint256 mintedCNote = cNOTE.balanceOf(address(this)) - balanceCNoteBefore;
+        
+        // liquidateBorrow
+        uint256 balanceCollateralBefore = cTokenCollateral.balanceOf(address(this));
+        vcNOTE.liquidateBorrow(borrower, mintedCNote, cTokenCollateral);
+        uint256 mintedCollateral = cTokenCollateral.balanceOf(address(this)) - balanceCollateralBefore;
 
-        CErc20(s.cNOTE).mint(repayAmount);
+        // transfer collateral to user
+        cTokenCollateral.transfer(msg.sender, mintedCollateral);
 
-        uint256 mintedCNote = IERC20(s.cNOTE).balanceOf(address(this)) - balanceCNoteBefore;
-
-        VCNote(s.vcNOTE).liquidateBorrow(borrower, mintedCNote, cTokenCollateral);
-
-        uint256 balanceCollateralAfter = IERC20(address(cTokenCollateral)).balanceOf(address(this));
-        IERC20(address(cTokenCollateral)).transfer(msg.sender, balanceCollateralAfter - balanceCollateralBefore);
+        emit LiquidateBorrow(msg.sender, repayAmount, mintedCNote, address(cTokenCollateral), mintedCollateral);
     }
 }
