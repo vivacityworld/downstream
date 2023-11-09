@@ -1,7 +1,7 @@
 import { mine, time } from "@nomicfoundation/hardhat-network-helpers";
 import { defaultAbiCoder } from "@ethersproject/abi";
 import { ethers } from 'hardhat'
-import LLAMA from "../../config/llama.json";
+import LLAMA from "../_config/llama.json";
 import { encodeRelativeStratigyConfig, encodeAccountConfig, encodeBytes32, createLlamaBootstrapHelper, getPermission } from "../../scripts/_utils/llama";
 
 import {
@@ -386,43 +386,38 @@ const deployFixture = async () => {
 	/////////////////// SETUP LLAMA           ///////////////////
 	/////////////////////////////////////////////////////////////
 
-	// const helper = await createLlamaBootstrapHelper(llama);
+	const helper = await createLlamaBootstrapHelper(llama);
 
-	// // role
-	// const DEPLOY_ROLE = 1;
-	// const STAKING_MODULE_ROLE = 2;
-	// const STAKER_ROLE = 3;
+	// role
+	const DEPLOY_ROLE = 1;
+	const STAKING_MODULE_ROLE = 2;
+	const STAKER_ROLE = 3;
 
-	// console.log(0);
+	// grant permission to deploy for initial setting
+	await helper.setRolePermission(DEPLOY_ROLE, core, "setStrategyAuthorization(address,bool)", deployerStrategy);
+	await helper.setRolePermission(DEPLOY_ROLE, core, "setScriptAuthorization(address,bool)", deployerStrategy);
+	await helper.setRolePermission(DEPLOY_ROLE, vivacityManageScript, "multicall(bytes[])", deployerStrategy);
+	await helper.setRolePermission(DEPLOY_ROLE, llamaGovernanceScript, "aggregate(address[],bytes[])", deployerStrategy);
 
-	// // grant permission to deploy for initial setting
-	// await helper.setRolePermission(DEPLOY_ROLE, core, "setStrategyAuthorization(address,bool)", deployerStrategy);
-	// await helper.setRolePermission(DEPLOY_ROLE, core, "setScriptAuthorization(address,bool)", deployerStrategy);
-	// await helper.setRolePermission(DEPLOY_ROLE, vivacityManageScript, "multicall(bytes[])", deployerStrategy);
-	// await helper.setRolePermission(DEPLOY_ROLE, llamaGovernanceScript, "aggregate(address[],bytes[])", deployerStrategy);
+	// authorize for using strategy
+	await helper.execute(core, "setStrategyAuthorization", [stakingModuleStrategy, true]);
+	await helper.execute(core, "setStrategyAuthorization", [stakerStrategy, true]);
 
-	// console.log(2);
-	// // authorize for using strategy
-	// await helper.execute(core, "setStrategyAuthorization", [stakingModuleStrategy, true]);
-	// await helper.execute(core, "setStrategyAuthorization", [stakerStrategy, true]);
+	// authorize for using script
+	await helper.execute(core, "setScriptAuthorization", [llamaGovernanceScript.address, true]);
+	await helper.execute(core, "setScriptAuthorization", [vivacityManageScript.address, true]);
 
-	// // authorize for using script
-	// await helper.execute(core, "setScriptAuthorization", [llamaGovernanceScript.address, true]);
-	// await helper.execute(core, "setScriptAuthorization", [vivacityManageScript.address, true]);
-
-	// console.log(1);
-
-	// // grant permission to staking module role
-	// // grant permission to staker role
-	// // grant role to staking module
-	// await helper.executeGovScript([
-	// 	[policy, "setRolePermission", [STAKING_MODULE_ROLE, getPermission(policy, "setRoleHolder(uint8,address,uint96,uint64)", stakingModuleStrategy), true]],
-	// 	[policy, "setRolePermission", [STAKING_MODULE_ROLE, getPermission(vivacityManageScript, "multicall(bytes[])", stakerStrategy), true]],
-	// 	[policy, "setRolePermission", [STAKING_MODULE_ROLE, getPermission(llamaGovernanceScript, "aggregate(address[],bytes[])", stakerStrategy), true]],
-	// 	[policy, "setRolePermission", [STAKER_ROLE, getPermission(vivacityManageScript, "multicall(bytes[])", stakerStrategy), true]],
-	// 	[policy, "setRolePermission", [STAKER_ROLE, getPermission(llamaGovernanceScript, "aggregate(address[],bytes[])", stakerStrategy), true]],
-	// 	[policy, "setRoleHolder", [STAKING_MODULE_ROLE, staking.address, 1, ethers.BigNumber.from(2).pow(64).sub(1)]],
-	// ]);
+	// grant permission to staking module role
+	// grant permission to staker role
+	// grant role to staking module
+	await helper.executeGovScript([
+		[policy, "setRolePermission", [STAKING_MODULE_ROLE, getPermission(policy, "setRoleHolder(uint8,address,uint96,uint64)", stakingModuleStrategy), true]],
+		[policy, "setRolePermission", [STAKING_MODULE_ROLE, getPermission(vivacityManageScript, "multicall(bytes[])", stakerStrategy), true]],
+		[policy, "setRolePermission", [STAKING_MODULE_ROLE, getPermission(llamaGovernanceScript, "aggregate(address[],bytes[])", stakerStrategy), true]],
+		[policy, "setRolePermission", [STAKER_ROLE, getPermission(vivacityManageScript, "multicall(bytes[])", stakerStrategy), true]],
+		[policy, "setRolePermission", [STAKER_ROLE, getPermission(llamaGovernanceScript, "aggregate(address[],bytes[])", stakerStrategy), true]],
+		[policy, "setRoleHolder", [STAKING_MODULE_ROLE, staking.address, 1, ethers.BigNumber.from(2).pow(64).sub(1)]],
+	]);
 
 
 

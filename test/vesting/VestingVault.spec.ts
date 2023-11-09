@@ -23,7 +23,7 @@ describe("VestingVault", function () {
 
   it("[error] add", async function () {
     // ========== action & validation =========
-    const max = ethers.constants.MaxUint256;
+    const max = ethers.BigNumber.from(2).pow(64).sub(1);
     await expect(vestingVault.add([signer.address], [10], [10], [10])).revertedWith("VestingVault: start should be greater than current timestamp");
     await expect(vestingVault.add([signer.address], [max], [10], [10, 10])).revertedWith("VestingVault: arrays length mismatch");
     await expect(vestingVault.add([zeroAddress], [max], [10], [10])).revertedWith("VestingVault: beneficiary is zero address");
