@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.20;
 
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {BorrowPermitParams} from "./libraries/BorrowPermitParams.sol";
 import {CTokenInterface} from "../CTokenInterfaces.sol";
@@ -14,6 +15,7 @@ import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol
  * @dev This contract converts Note to cNOTE and do all the action on behalf of user.
  */
 contract VCNoteRouter is ReentrancyGuard {
+    using Math for uint256;
 
     event Mint(address indexed user, uint256 inputNote, uint256 outputVCNote);
     event Redeem(address indexed user, uint256 inputVCNote, uint256 outputNote);
@@ -87,6 +89,22 @@ contract VCNoteRouter is ReentrancyGuard {
      * @param amount Amount of NOTE to repayBorrow
      */
      function repayBorrow(uint256 amount) external nonReentrant {
+
+        // if amount is max, repay min (balanceNote, borrowsNote)
+        if (amount == type(uint).max) {
+            uint256 balanceNote = NOTE.balanceOf(msg.sender);
+            
+            uint256 borrows = vcNOTE.borrowBalanceCurrent(msg.sender);
+            uint256 exchangeRateCNote = cNOTE.exchangeRateCurrent();
+
+            uint256 borrowsNote = borrows.mulDiv(exchangeRateCNote, 1e18, Math.Rounding.Ceil);
+            if (balanceNote >= borrowsNote) {
+                amount = borrowsNote;
+            } else {
+                amount = balanceNote;
+            }
+        }
+
         // transfer NOTE from the user to router contract
         NOTE.transferFrom(msg.sender, address(this), amount);
 
