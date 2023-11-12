@@ -6,13 +6,14 @@ import {BorrowPermitParams} from "./libraries/BorrowPermitParams.sol";
 import {CTokenInterface} from "../CTokenInterfaces.sol";
 import {IVCNote} from "./interfaces/IVCNote.sol";
 import {ICERC20} from "./interfaces/ICERC20.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 /**
  * @title VCNote Router
  * @notice Contract for users to interact with NOTE instead of cNOTE
  * @dev This contract converts Note to cNOTE and do all the action on behalf of user.
  */
-contract VCNoteRouter {
+contract VCNoteRouter is ReentrancyGuard {
 
     event Mint(address indexed user, uint256 inputNote, uint256 outputVCNote);
     event Redeem(address indexed user, uint256 inputVCNote, uint256 outputNote);
@@ -37,7 +38,7 @@ contract VCNoteRouter {
      * @notice mint vcNOTE from NOTE
      * @param amount Amount of NOTE to mint
      */
-    function mint(uint256 amount) external {
+    function mint(uint256 amount) external nonReentrant {
         // transfer NOTE from the user to router contract
         NOTE.transferFrom(msg.sender, address(this), amount);
 
@@ -61,7 +62,7 @@ contract VCNoteRouter {
      * @notice redeem vcNOTE, receive NOTE
      * @param amount Amount of vcNOTE to redeem
      */
-    function redeem(uint256 amount) external {
+    function redeem(uint256 amount) external nonReentrant {
         // transfer vcNOTE from the user to router contract
         vcNOTE.transferFrom(msg.sender, address(this), amount);
 
@@ -85,7 +86,7 @@ contract VCNoteRouter {
      * @notice repay NOTE
      * @param amount Amount of NOTE to repayBorrow
      */
-    function repayBorrow(uint256 amount) external {
+     function repayBorrow(uint256 amount) external nonReentrant {
         // transfer NOTE from the user to router contract
         NOTE.transferFrom(msg.sender, address(this), amount);
 
@@ -104,7 +105,7 @@ contract VCNoteRouter {
      * @notice borrow cNOTE, receive NOTE
      * @param params BorrowPermitParams
      */
-    function borrow(BorrowPermitParams memory params) external {
+    function borrow(BorrowPermitParams memory params) external nonReentrant {
         require(params.executor == address(this), "VCNoteRouter: invalid executor");
         require(params.receiver == address(this), "VCNoteRouter: invalid receiver");
 
