@@ -36,7 +36,8 @@ task("deploy", "deploy contracts")
         }
       } catch (e: any) {
         console.error(e);
-        process.exitCode = 1;
+        fs.writeFileSync(`${networkPath}.json`, JSON.stringify(deployed, null, "\t"));
+        return process.exitCode = 1;
       }
     }
     console.log("deployed", deployed);

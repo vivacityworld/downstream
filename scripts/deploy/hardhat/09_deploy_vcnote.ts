@@ -11,7 +11,7 @@ async function main({ deployed }: { deployed: DeployLocal }) {
 
   const vcNoteImpl = await vcNoteDelegateFactory.deploy();
   const vcNoteProxy = await CErc20DelegatorFactory.deploy(
-    deployed.CNOTE!,
+    deployed.cNOTE!,
     deployed.comptroller!,
     deployed.model!.CCNoteJumpRateModelV2,
     ethers.utils.parseEther("1"),

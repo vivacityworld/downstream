@@ -13,7 +13,7 @@ async function main({ deployed }: { deployed: DeployLocal }) {
   const priceOracleRouter = await PriceOracleRouterFactory.deploy();
 
   const VCNotePriceOracleFactory = await ethers.getContractFactory("VCNotePriceOracle");
-  const vcNotePriceOracle = await VCNotePriceOracleFactory.deploy(deployed.CNOTE!);
+  const vcNotePriceOracle = await VCNotePriceOracleFactory.deploy(deployed.cNOTE!);
 
 
   ////////////////////////////////

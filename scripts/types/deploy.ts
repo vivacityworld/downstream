@@ -2,7 +2,7 @@
 export interface DeployLocal {
   NOTE?: string;
   VIVA?: string;
-  CNOTE?: string;
+  cNOTE?: string;
   turnstile?: string;
   llama?: LlamaAddress;
   llamaFramework?: LlamaFrameworkAddress,
@@ -44,8 +44,8 @@ export interface LlamaAddress {
   llamaPolicy: string;
   llamaLens: string;
   bootstrapStrategy: string;
-  stakingModuleStrategy: string;
-  stakerStrategy: string;
+  stakingModuleStrategy?: string;
+  stakerStrategy?: string;
   coreTeamStrategy: string;
   llamaGovScript: string;
   vivaManageScript: string;
