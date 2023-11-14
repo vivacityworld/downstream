@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.20;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-
 interface ILlamaCore {
 
   enum ActionState {
@@ -25,6 +23,7 @@ interface ILlamaCore {
     bytes data; // Data to be called on the target when the action is executed.
   }
   
+  function policy() external view returns (address);
   function createAction(
       uint8 role,
       address strategy,
@@ -38,4 +37,12 @@ interface ILlamaCore {
 
   function getQuantity(address policyholder, uint8 role) external view returns (uint96);
   function getActionState(ActionInfo calldata actionInfo) external view returns (ActionState);
+
+  function setScriptAuthorization(address script, bool authorized) external;
+  function setStrategyLogicAuthorization(address strategyLogic, bool authorized) external;
+  function createStrategies(address llamaStrategyLogic, bytes[] calldata strategyConfigs) external;
+  function setStrategyAuthorization(address strategy, bool authorized) external;
+  function setAccountLogicAuthorization(address accountLogic, bool authorized) external;
+  function createAccounts(address llamaAccountLogic, bytes[] calldata accountConfigs) external;
+  function setGuard(address target, bytes4 selector, address guard) external;
 }

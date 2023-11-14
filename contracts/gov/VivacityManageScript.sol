@@ -18,6 +18,9 @@ import {IOwnable} from "./interfaces/IOwnable.sol";
 import {IPriceOracleRouter} from "./interfaces/IPriceOracleRouter.sol";
 import {IWhitelistRouter} from "./interfaces/IWhitelistRouter.sol";
 import {ICErc20Delegator} from "./interfaces/ICErc20Delegator.sol";
+import {ILlamaCore} from "./interfaces/ILlamaCore.sol";
+import {ILlamaPolicy} from "./interfaces/ILlamaPolicy.sol";
+import {ILlamaExecutor} from "./interfaces/ILlamaExecutor.sol";
 
 import {LlamaBaseScript} from "./_llama/llama-scripts/LlamaBaseScript.sol";
 import {LlamaUtils} from "./_llama/lib/LlamaUtils.sol";
@@ -245,5 +248,91 @@ contract VivacityManageScript is LlamaBaseScript {
 
   function upgradeCTokenImplementation(address cToken, address newImplementation) external onlyDelegateCall {
     ICErc20Delegator(cToken)._setImplementation(newImplementation, false, "");
+  }
+
+  /////////////////////////////////
+  /////     LLAMA POLICY      /////
+  /////////////////////////////////
+
+  function initializeRoles(bytes[] calldata description) external onlyDelegateCall {
+    (, ILlamaPolicy policy) = _context();
+    uint256 length = description.length;
+    for (uint256 i = 0; i < length; i = LlamaUtils.uncheckedIncrement(i)) {
+      policy.initializeRole(description[i]);
+    }
+  }
+
+  function setRoleHolders(ILlamaPolicy.RoleHolderData[] calldata _setRoleHolders) external onlyDelegateCall {
+    (, ILlamaPolicy policy) = _context();
+    uint256 length = _setRoleHolders.length;
+    for (uint256 i = 0; i < length; i = LlamaUtils.uncheckedIncrement(i)) {
+      policy.setRoleHolder(
+        _setRoleHolders[i].role,
+        _setRoleHolders[i].policyholder,
+        _setRoleHolders[i].quantity,
+        _setRoleHolders[i].expiration
+      );
+    }
+  }
+
+  function setRolePermissions(ILlamaPolicy.RolePermissionData[] calldata _setRolePermissions) external onlyDelegateCall {
+    (, ILlamaPolicy policy) = _context();
+    uint256 length = _setRolePermissions.length;
+    for (uint256 i = 0; i < length; i = LlamaUtils.uncheckedIncrement(i)) {
+      policy.setRolePermission(
+        _setRolePermissions[i].role, _setRolePermissions[i].permissionData, _setRolePermissions[i].hasPermission
+      );
+    }
+  }
+
+  function revokePolicies(address[] calldata _revokePolicies) external onlyDelegateCall {
+    (, ILlamaPolicy policy) = _context();
+    for (uint256 i = 0; i < _revokePolicies.length; i = LlamaUtils.uncheckedIncrement(i)) {
+      policy.revokePolicy(_revokePolicies[i]);
+    }
+  }
+
+  ///////////////////////////////
+  /////     LLAMA CORE      /////
+  ///////////////////////////////
+
+  function setStrategyLogicAuthorization(address strategyLogic, bool authorized) external onlyDelegateCall {
+    (ILlamaCore core,) = _context();
+    core.setStrategyLogicAuthorization(strategyLogic, authorized);
+  }
+
+  function createStrategies(address llamaStrategyLogic, bytes[] calldata strategyConfigs) external onlyDelegateCall {
+    (ILlamaCore core,) = _context();
+    core.createStrategies(llamaStrategyLogic, strategyConfigs);
+  }
+
+  function setStrategyAuthorization(address strategy, bool authorized) external onlyDelegateCall {
+    (ILlamaCore core,) = _context();
+    core.setStrategyAuthorization(strategy, authorized);
+  }
+
+  function setAccountLogicAuthorization(address accountLogic, bool authorized) external onlyDelegateCall {
+    (ILlamaCore core,) = _context();
+    core.setAccountLogicAuthorization(accountLogic, authorized);
+  }
+
+  function createAccounts(address llamaAccountLogic, bytes[] calldata accountConfigs) external onlyDelegateCall {
+    (ILlamaCore core,) = _context();
+    core.createAccounts(llamaAccountLogic, accountConfigs);
+  }
+
+  function setGuard(address target, bytes4 selector, address guard) external onlyDelegateCall {
+    (ILlamaCore core,) = _context();
+    core.setGuard(target, selector, guard);
+  }
+
+  function setScriptAuthorization(address script, bool authorized) external onlyDelegateCall {
+    (ILlamaCore core,) = _context();
+    core.setScriptAuthorization(script, authorized);
+  }
+
+  function _context() internal view returns (ILlamaCore core, ILlamaPolicy policy) {
+    core = ILlamaCore(ILlamaExecutor(address(this)).LLAMA_CORE());
+    policy = ILlamaPolicy(core.policy());
   }
 }
