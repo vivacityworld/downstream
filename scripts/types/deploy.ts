@@ -1,7 +1,9 @@
 
 export interface DeployLocal {
+  NOTE?: string;
   VIVA?: string;
   CNOTE?: string;
+  turnstile?: string;
   llama?: LlamaAddress;
   llamaFramework?: LlamaFrameworkAddress,
   model?: Record<string, string>;
@@ -15,6 +17,11 @@ export interface DeployLocal {
   staking?: string;
   vivaLens?: string;
   rwa?: any;
+  SPCTPool?: any,
+  SPCT?: any,
+  cSPCT?: any,
+  SPCTOracleRouter?: any,
+  SPCTWhitelistRouter?: any,
 }
 
 export interface LlamaFrameworkAddress {
@@ -39,6 +46,7 @@ export interface LlamaAddress {
   bootstrapStrategy: string;
   stakingModuleStrategy: string;
   stakerStrategy: string;
+  coreTeamStrategy: string;
   llamaGovScript: string;
   vivaManageScript: string;
   vivacityTreasury: string;

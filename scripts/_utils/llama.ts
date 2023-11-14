@@ -61,7 +61,7 @@ export async function createLlamaHelper(
             data: calldata
         };
         if (doVote) {
-            tx = await core.castApproval(1, actionInfo, "");
+            tx = await core.castApproval(createRole, actionInfo, "");
             await tx.wait();
         }
         if (doVote && doExecute) {
@@ -70,12 +70,27 @@ export async function createLlamaHelper(
         }
     }
 
+    async function rawExecute(actionId: number, creator: string, target: Contract, functionName: string, args: any[]) {
+        const calldata = target.interface.encodeFunctionData(functionName, args);
+        const actionInfo = {
+            id: actionId,
+            creator: creator,
+            creatorRole: createRole,
+            strategy: createStrategy,
+            target: target.address,
+            value: 0,
+            data: calldata
+        };
+        const tx = await core.executeAction(actionInfo);
+        await tx.wait();
+    }
 
     return {
         setRolePermission,
         executeVivaScript,
         executeGovScript,
         execute,
+        rawExecute,
     }
 }
 
