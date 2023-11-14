@@ -1,0 +1,61 @@
+{
+  "comment": "Vivacity Governance",
+  "factory": "",
+  "instanceName": "Vivacity Governance4",
+  "instanceColor": "#000000",
+  "instanceLogo": "",
+  "strategyLogic": "",
+  "accountLogic": "",
+  "initialStrategies": [
+    {
+      "approvalPeriod": 691200,
+      "queuingPeriod": 0,
+      "expirationPeriod": 691200,
+      "minApprovalPct": 1,
+      "minDisapprovalPct": 1,
+      "isFixedLengthApprovalPeriod": false,
+      "approvalRole": 1,
+      "disapprovalRole": 1,
+      "forceApprovalRoles": [],
+      "forceDisapprovalRoles": []
+    },
+    {
+      "approvalPeriod": 86400,
+      "queuingPeriod": 0,
+      "expirationPeriod": 86400,
+      "minApprovalPct": 9900,
+      "minDisapprovalPct": 9900,
+      "isFixedLengthApprovalPeriod": false,
+      "approvalRole": 2,
+      "disapprovalRole": 2,
+      "forceApprovalRoles": [],
+      "forceDisapprovalRoles": []
+    }
+  ],
+  "initialAccounts": [
+    {
+      "name": "Vivacity Treasury"
+    }
+  ],
+  "initialRoleDescriptions": [
+    "Deployer",
+    "Core Team"
+  ],
+  "initialRoleHolders": [
+    {
+      "comment": "Deployer",
+      "policyholder": "0xb61aC5d4d1E39131Dd3993FaB851Be492346eCc7",
+      "expiration": "18446744073709551615",
+      "quantity": 1,
+      "role": 1
+    },
+    {
+      "comment": "Core Team Member",
+      "policyholder": "0xb61aC5d4d1E39131Dd3993FaB851Be492346eCc7",
+      "expiration": "18446744073709551615",
+      "quantity": 1,
+      "role": 2
+    }
+  ],
+  "initialRolePermissions": []
+}
