@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.20;
 
 /// @dev This script is a template for creating new scripts, and should not be used directly.
 abstract contract LlamaBaseScript {

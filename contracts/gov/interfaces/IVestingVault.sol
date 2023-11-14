@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.20;
 
 interface IVestingVault {
     function add(address[] memory _account, uint64[] memory _start, uint64[] memory _duration, uint256[] memory _amount) external;
