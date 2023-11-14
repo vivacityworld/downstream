@@ -4,6 +4,8 @@ pragma solidity ^0.8.20;
 import "@openzeppelin/contracts/utils/Address.sol";
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {ITurnstile} from "../_interfaces/ITurnstile.sol";
+import {IAssignable} from "./interfaces/IAssignable.sol";
 import {IUnitroller} from "./interfaces/IUnitroller.sol";
 import {IComptroller} from "./interfaces/IComptroller.sol";
 import {ILlamaAccount} from "./interfaces/ILlamaAccount.sol";
@@ -26,21 +28,13 @@ import {LlamaUtils} from "./_llama/lib/LlamaUtils.sol";
   */  
 contract VivacityManageScript is LlamaBaseScript {
 
-  // ==========================
-  // ========= Structs ========
-  // ==========================
 
-  struct AddCRWAParams {
-    address comptroller;
-    address cToken;
-    address cTokenImplementation;
-    address interestRateModel;
-    address oracle;
-    address whitelist;
-    uint256 collateralFactor;
-    uint256 reserveFactor;
-    uint256 borrowCap;
-  }
+  // ========================
+  // ======== Events ========
+  // ========================
+
+  event RegisterForCSR(uint256 tokenId);
+  event AssignForCSR(address target, uint256 tokenId);
 
   // ========================
   // ======== Errors ========
@@ -80,6 +74,24 @@ contract VivacityManageScript is LlamaBaseScript {
       results[i] = Address.functionDelegateCall(SELF, data[i]);
     }
     return results;
+  }
+
+  ///////////////////////////////
+  /////         CSR         /////
+  ///////////////////////////////
+
+  function registerForCSR(address turnstile) external onlyDelegateCall {
+    uint256 tokenId = ITurnstile(turnstile).register(address(this));
+    emit RegisterForCSR(tokenId);
+  }
+
+  function assignForCSR(address target, address turnstile, uint256 tokenId) external onlyDelegateCall {
+    IAssignable(target).assignForCSR(turnstile, tokenId);
+    emit AssignForCSR(target, tokenId);
+  }
+
+  function withdrawCSR(address turnstile, uint256 _tokenId, address payable _recipient, uint256 _amount) external onlyDelegateCall {
+    ITurnstile(turnstile).withdraw(_tokenId, _recipient, _amount);
   }
 
   ///////////////////////////////
@@ -132,7 +144,7 @@ contract VivacityManageScript is LlamaBaseScript {
   }
 
   ///////////////////////////////
-  /////     PRICE ORACLE    /////
+  /////       WHITELIST     /////
   ///////////////////////////////
 
   function setWhitelist(address router, address token, address whitelistContract) external onlyDelegateCall {
@@ -167,13 +179,8 @@ contract VivacityManageScript is LlamaBaseScript {
   }
 
   // CRWA
-  function setWhitelist(address cToken, address whitelist) external onlyDelegateCall {
-    ICRWA(cToken).setWhitelist(whitelist);
-  }
-
-  // CRWA
-  function setCRWAPriceOracle(address cToken, address oracle) external onlyDelegateCall {
-    ICRWA(cToken).setPriceOracle(oracle);
+  function setRWAWhitelistRouter(address cToken, address whitelist) external onlyDelegateCall {
+    ICRWA(cToken).setWhitelistRouter(whitelist);
   }
 
   //////////////////////////
