@@ -1,7 +1,7 @@
 import { mine, time } from "@nomicfoundation/hardhat-network-helpers";
 import { defaultAbiCoder } from "@ethersproject/abi";
 import { ethers } from 'hardhat'
-import LLAMA from "../../config/llama.json";
+import LLAMA from "../_config/llama.json";
 import { encodeRelativeStratigyConfig, encodeAccountConfig, encodeBytes32, createLlamaBootstrapHelper, getPermission } from "../../scripts/_utils/llama";
 
 import {
@@ -31,6 +31,8 @@ import {
 	LlamaCore,
 	LlamaPolicy,
 	VivacityManageScript,
+	VCNoteRouter,
+	OffchainFundWhitelistRouter
 } from '../../typechain'
 import { LlamaAddress } from "../../scripts/types/deploy";
 
@@ -54,6 +56,7 @@ export interface Contracts {
 	ofPriceOracle: MockOffchainFundPriceOracle;
 	sdycPriceOracle: MockSDYCPriceOracle;
 	ofWhitelist: MockOffchainFundWhitelist,
+	ofWhitelistRouter: OffchainFundWhitelistRouter;
 	sdycWhitelist: MockSDYCWhitelist;
 	turnstile: MockTurnstile;
 	staking: Staking;
@@ -62,6 +65,7 @@ export interface Contracts {
 	vivaScript: VivacityManageScript;
 	stakerStrategy: string;
 	llama: LlamaAddress;
+	vcNoteRouter: VCNoteRouter;
 }
 
 const deployFixture = async () => {
@@ -85,12 +89,15 @@ const deployFixture = async () => {
 	const MockOffchainFundPriceOracleFactory = await ethers.getContractFactory("MockOffchainFundPriceOracle");
 	const MockSDYCPriceOracleFactory = await ethers.getContractFactory("MockSDYCPriceOracle");
 	const MockOffchainFundWhitelistFactory = await ethers.getContractFactory("MockOffchainFundWhitelist");
+	const MockOffchainFundWhitelistRouterFactory = await ethers.getContractFactory("OffchainFundWhitelistRouter");
 	const MockSDYCWhitelistFactory = await ethers.getContractFactory("MockSDYCWhitelist");
 
 	const OffchainFundPriceOracleRouterFactory = await ethers.getContractFactory("OffchainFundPriceOracleRouter");
 	const SDYCPriceOracleRouterFactory = await ethers.getContractFactory("SDYCPriceOracleRouter");
 
 	const MockTurnstileFactory = await ethers.getContractFactory("MockTurnstile");
+
+	const VCNoteRouter = await ethers.getContractFactory("VCNoteRouter");
 
 	//////////////////////////////////////
 	//      DEPLOY Mock Comptroller     //
@@ -100,6 +107,7 @@ const deployFixture = async () => {
 	const ofPriceOracle = await MockOffchainFundPriceOracleFactory.deploy(1e8);
 	const sdycPriceOracle = await MockSDYCPriceOracleFactory.deploy(1e8, 8);
 	const ofWhitelist = await MockOffchainFundWhitelistFactory.deploy();
+	const ofWhitelistRouter = await MockOffchainFundWhitelistRouterFactory.deploy();
 	const sdycWhitelist = await MockSDYCWhitelistFactory.deploy();
 
 	// token
@@ -238,6 +246,7 @@ const deployFixture = async () => {
 		llamaPolicy: policy.address,
 		llamaLens: llamaLens.address,
 		bootstrapStrategy: deployerStrategy,
+		coreTeamStrategy: stakingModuleStrategy,
 		stakingModuleStrategy: stakingModuleStrategy,
 		stakerStrategy: stakerStrategy,
 		llamaGovScript: llamaGovernanceScript.address,
@@ -410,11 +419,15 @@ const deployFixture = async () => {
 		[policy, "setRoleHolder", [STAKING_MODULE_ROLE, staking.address, 1, ethers.BigNumber.from(2).pow(64).sub(1)]],
 	]);
 
+
+
 	const cOF = await ethers.getContractAt("CRWAToken", ofProxy.address);
 	const cSDYC = await ethers.getContractAt("CRWAToken", sdycProxy.address);
 	const compt = await ethers.getContractAt("Comptroller", unitroller.address);
 	const vcn = await ethers.getContractAt("VCNote", vcNoteProxy.address);
 	const cn = await ethers.getContractAt("CErc20Delegate", cNoteProxy.address);
+
+	const vcnr = await VCNoteRouter.deploy(note.address, cn.address, vcn.address);
 
 	return {
 		viva,
@@ -443,7 +456,9 @@ const deployFixture = async () => {
 		llamaPolicy: policy,
 		vivaScript: vivacityManageScript,
 		stakerStrategy,
-		llama
+		llama,
+		ofWhitelistRouter,
+		vcNoteRouter: vcnr,
 	}
 }
 

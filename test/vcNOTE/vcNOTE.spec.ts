@@ -5,6 +5,7 @@ import { loadFixture, mine } from "@nomicfoundation/hardhat-network-helpers";
 import deployFixture, { Contracts } from "../_fixture/deployFixture";
 import { MockLendingLedger, VCNote } from "../../typechain";
 import setupVCNote from "./_setup";
+import { solidityKeccak256 } from "ethers/lib/utils";
 
 
 describe("vcNOTE", function () {
@@ -37,7 +38,7 @@ describe("vcNOTE", function () {
     await vcNote.setLendingLedger(lendingLedger.address);
 
     // ============== validation ==============
-    expect(await vcNote.lendingLedger()).eq(lendingLedger.address);
+    expect(await vcNote.getLendingLedger()).eq(lendingLedger.address);
   });
 
   it("[error] assignForCSR", async function () {
@@ -83,9 +84,75 @@ describe("vcNOTE", function () {
     const currentEpoch = Math.floor(Date.now() / 1000 / WEEK) * WEEK;
     const currentLiquidity = await vcNote.callStatic.balanceOfUnderlying(signer.address);
 
-
     expect(epoch).eq(currentEpoch);
     expect(liquidity).eq(currentLiquidity);
+  })
+
+
+  it("borrow receiver", async function () {
+    const balanceOfSignerBefore = await contracts.cNote.balanceOf(signer.address);
+    const balanceOfReceiverBefore = await contracts.cNote.balanceOf(receiver.address);
+    const borrowedSignerBefore = await vcNote.borrowBalanceStored(signer.address);
+    const borrowedReceiverBefore = await vcNote.borrowBalanceStored(receiver.address);
+    // ================ params ================
+    const borrowAmount = ethers.utils.parseEther("10");
+
+    // ================ action ================
+    await vcNote["borrow(uint256,address)"](borrowAmount, receiver.address);
+
+    // ============== validation ==============
+    const balanceOfSignerAfter = await contracts.cNote.balanceOf(signer.address);
+    const balanceOfReceiverAfter = await contracts.cNote.balanceOf(receiver.address);
+    const borrowedSignerAfter = await vcNote.borrowBalanceStored(signer.address);
+    const borrowedReceiverAfter = await vcNote.borrowBalanceStored(receiver.address);
+
+    expect(balanceOfSignerBefore).eq(balanceOfSignerAfter);
+    expect(borrowedSignerAfter.sub(borrowedSignerBefore)).eq(borrowAmount);
+
+    expect(balanceOfReceiverAfter.sub(balanceOfReceiverBefore)).eq(borrowAmount);
+    expect(borrowedReceiverBefore).eq(borrowedReceiverAfter);
+  })
+
+  it("borrowPermit", async function () {
+    // ================ params ================
+    const borrowAmount = ethers.utils.parseEther("1");
+
+    const balanceOfSignerBefore = await contracts.cNote.balanceOf(signer.address);
+    const balanceOfReceiverBefore = await contracts.cNote.balanceOf(receiver.address);
+    const borrowedSignerBefore = await vcNote.borrowBalanceStored(signer.address);
+    const borrowedReceiverBefore = await vcNote.borrowBalanceStored(receiver.address);
+
+    const chainId = (await ethers.provider.getNetwork()).chainId;
+    const nonce = await contracts.vcNote.getNonce(signer.address);
+    const deadline = Math.floor(Date.now() / 1000) + 3600;
+
+    const hash = ethers.utils.arrayify(solidityKeccak256(
+      ["uint256", "uint256", "address", "address", "address", "uint256", "uint256"],
+      [chainId, nonce, receiver.address, signer.address, receiver.address, borrowAmount, deadline]
+    ));
+
+    const signature = await signer.signMessage(hash);
+
+    // ================ action ================
+    await vcNote.connect(receiver).borrowPermit({
+      executor: receiver.address,
+      borrower: signer.address,
+      receiver: receiver.address,
+      borrowAmount: borrowAmount,
+      deadline: deadline,
+      signature: signature,
+    });
+
+    // ============== validation ==============
+    const balanceOfSignerAfter = await contracts.cNote.balanceOf(signer.address);
+    const balanceOfReceiverAfter = await contracts.cNote.balanceOf(receiver.address);
+    const borrowedSignerAfter = await vcNote.borrowBalanceStored(signer.address);
+    const borrowedReceiverAfter = await vcNote.borrowBalanceStored(receiver.address);
+
+    expect(balanceOfSignerBefore).eq(balanceOfSignerAfter);
+    expect(borrowedSignerBefore.add(borrowAmount)).lt(borrowedSignerAfter);
+    expect(balanceOfReceiverBefore.add(borrowAmount)).eq(balanceOfReceiverAfter);
+    expect(borrowedReceiverBefore).eq(borrowedReceiverAfter);
   })
 
   it("redeem test", async function () {
