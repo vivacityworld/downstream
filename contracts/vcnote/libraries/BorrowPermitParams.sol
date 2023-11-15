@@ -26,8 +26,8 @@ library BorrowPermitParamsLib {
     bytes32 constant EIP712_TYPE_HASH =
         keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
     bytes32 constant STRUCT_HASH =
-        keccak256("Vivacity Borrow Permit(address executor,address borrower,address receiver,uint256 amount,uint256 deadline)");
-
+        keccak256("Vivacity Borrow Permit(address executor,address borrower,address receiver,uint256 borrowAmount,uint256 deadline,uint256 nonce)");
+    
     bytes private constant NAME = bytes("Vivacity Borrow Permit");
     bytes private constant VERSION = bytes("1");
 
@@ -51,7 +51,8 @@ library BorrowPermitParamsLib {
             params.borrower,
             params.receiver,
             params.borrowAmount,
-            params.deadline
+            params.deadline,
+            VCNoteStorageLib.useNonce(params.borrower)
         )));
         if (params.borrower != ECDSA.recover(digest, params.signature)) {
             revert InvalidSignature();
