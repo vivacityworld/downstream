@@ -125,7 +125,6 @@ contract VCNoteRouter is ReentrancyGuard {
      */
     function borrow(BorrowPermitParams memory params) external nonReentrant {
         require(params.executor == address(this), "VCNoteRouter: invalid executor");
-        require(params.receiver == address(this), "VCNoteRouter: invalid receiver");
 
         // borrow cNote in vcNote
         uint256 balanceCNoteBefore = cNOTE.balanceOf(address(this));
