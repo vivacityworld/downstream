@@ -23,7 +23,7 @@ struct Cache {
 library BorrowPermitParamsLib {
     bytes32 private constant _BORROW_PERMIT_STORAGE = keccak256(abi.encode("vivacity.contracts.vcnote.libraries.BorrowPermitParams.Cache"));
 
-    bytes32 constant EIP721_TYPE_HASH =
+    bytes32 constant EIP712_TYPE_HASH =
         keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
     bytes32 constant STRUCT_HASH =
         keccak256("Vivacity Borrow Permit(address executor,address borrower,address receiver,uint256 amount,uint256 deadline)");
@@ -73,7 +73,7 @@ library BorrowPermitParamsLib {
     }
 
     function _buildDomainSeparator() private view returns (bytes32) {
-        return keccak256(abi.encode(EIP721_TYPE_HASH, keccak256(NAME), keccak256(VERSION), block.chainid, address(this)));
+        return keccak256(abi.encode(EIP712_TYPE_HASH, keccak256(NAME), keccak256(VERSION), block.chainid, address(this)));
     }
 
     function get() internal pure returns (Cache storage s) {
