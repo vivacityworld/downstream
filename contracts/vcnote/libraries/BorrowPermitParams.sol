@@ -8,10 +8,9 @@ import {VCNoteStorage, VCNoteStorageLib} from "../storages/VCNoteStorage.sol";
 using BorrowPermitParamsLib for BorrowPermitParams global;
 
 struct BorrowPermitParams {
-    address executor;
+    address payable executor;
     address payable borrower;
-    address payable receiver;
-    uint256 borrowAmount;
+    uint256 borrowCNote;
     uint256 deadline;
     bytes signature;
 }
@@ -26,7 +25,7 @@ library BorrowPermitParamsLib {
     bytes32 constant EIP712_TYPE_HASH =
         keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
     bytes32 constant STRUCT_HASH =
-        keccak256("Vivacity Borrow Permit(address executor,address borrower,address receiver,uint256 borrowAmount,uint256 deadline,uint256 nonce)");
+        keccak256("Vivacity Borrow Permit(address executor,address borrower,uint256 borrowCNote,uint256 deadline,uint256 nonce)");
     
     bytes private constant NAME = bytes("Vivacity Borrow Permit");
     bytes private constant VERSION = bytes("1");
@@ -41,16 +40,14 @@ library BorrowPermitParamsLib {
         if (msg.sender != params.executor) revert InvalidExecutor();
 
         if (params.borrower == address(0)) revert InvalidParams("borrower is zero address");
-        if (params.receiver == address(0)) revert InvalidParams("receiver is zero address");
-        if (params.borrowAmount == 0) revert InvalidParams("borrowAmount is zero");
+        if (params.borrowCNote == 0) revert InvalidParams("borrowCNote is zero");
         if (params.signature.length != 65) revert InvalidParams("invalid signature length");
 
         bytes32 digest = _hashTypedDataV4(keccak256(abi.encode(
             STRUCT_HASH,
             params.executor,
             params.borrower,
-            params.receiver,
-            params.borrowAmount,
+            params.borrowCNote,
             params.deadline,
             VCNoteStorageLib.useNonce(params.borrower)
         )));
