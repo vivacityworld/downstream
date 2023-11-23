@@ -134,7 +134,7 @@ contract VCNote is CErc20Delegate_VCNote {
         params.validate();
         accrueInterest();
         // borrowFresh emits borrow-specific logs on errors, so we don't need to
-        borrowFresh(params.borrower, params.borrowAmount, params.receiver);
+        borrowFresh(params.borrower, params.borrowCNote, params.executor);
     }
 
     // ==============================

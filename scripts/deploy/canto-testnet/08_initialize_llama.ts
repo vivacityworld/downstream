@@ -10,7 +10,7 @@ async function main({ deployed }: { deployed: DeployLocal }) {
   if (!deployed.llamaFramework?.llamaLens) throw "not found llamaLens";
 
   const DEPLOY_ROLE = 1;
-  const CORE_TEAM_ROLE = 1;
+  const CORE_TEAM_ROLE = 2;
 
   const core = await ethers.getContractAt("LlamaCore", deployed.llama.llamaCore);
   const policy = await ethers.getContractAt("LlamaPolicy", deployed.llama.llamaPolicy);

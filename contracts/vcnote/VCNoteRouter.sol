@@ -17,11 +17,10 @@ import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol
 contract VCNoteRouter is ReentrancyGuard {
     using Math for uint256;
 
-    event Mint(address indexed user, uint256 inputNote, uint256 outputVCNote);
-    event Redeem(address indexed user, uint256 inputVCNote, uint256 outputNote);
-    event Borrow(address indexed user, uint256 outputNote);
-    event RepayBorrow(address indexed user, uint256 inputNote, uint256 repaidCNote);
-    event LiquidateBorrow(address indexed user, uint256 inputNote, uint256 repaidCNote, address collateral, uint256 outputCollateral);
+    event Mint(address minter, uint mintAmount, uint mintTokens);
+    event Redeem(address redeemer, uint redeemAmount, uint redeemTokens);
+    event Borrow(address borrower, uint256 borrowAmount);
+    event RepayBorrow(address payer, uint repayAmount);
 
     IVCNote public immutable vcNOTE;
     ICERC20 public immutable cNOTE;
@@ -116,7 +115,7 @@ contract VCNoteRouter is ReentrancyGuard {
         // repayBorrow
         vcNOTE.repayBorrowBehalf(msg.sender, mintedCNote);
 
-        emit RepayBorrow(msg.sender, amount, mintedCNote);
+        emit RepayBorrow(msg.sender, amount);
     }
 
     /**
@@ -125,7 +124,6 @@ contract VCNoteRouter is ReentrancyGuard {
      */
     function borrow(BorrowPermitParams memory params) external nonReentrant {
         require(params.executor == address(this), "VCNoteRouter: invalid executor");
-        require(params.receiver == address(this), "VCNoteRouter: invalid receiver");
 
         // borrow cNote in vcNote
         uint256 balanceCNoteBefore = cNOTE.balanceOf(address(this));
