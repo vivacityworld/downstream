@@ -46,7 +46,8 @@ export interface LlamaAddress {
   bootstrapStrategy: string;
   stakingModuleStrategy?: string;
   stakerStrategy?: string;
-  coreTeamStrategy: string;
+  coreTeamStrategy100: string;
+  coreTeamStrategy50: string;
   llamaGovScript: string;
   vivaManageScript: string;
   vivacityTreasury: string;

@@ -10,26 +10,12 @@ async function main({ deployed }: { deployed: DeployLocal }) {
   if (!deployed.model?.VCNoteJumpRateModelV2) throw "not found VCNoteJumpRateModelV2";
 
   ////////////////////////////////
-  //       DEPLOY VCNOTE        //
+  //    DEPLOY VCNOTERouter     //
   ////////////////////////////////
-  const vcNoteImpl = await deploy("VCNote", []);
-
-  const vcNoteProxy = await deploy("CErc20Delegator", [
-    deployed.cNOTE,
-    deployed.comptroller,
-    deployed.model.VCNoteJumpRateModelV2,
-    ethers.utils.parseEther("1"),
-    `Vivacity Collateralized NOTE`,
-    `vcNOTE`,
-    18,
-    deployed.llama?.llamaExecutor!,
-    vcNoteImpl.address,
-    []
-  ])
+  const vcNoteRouter = await deploy("VCNoteRouter", [deployed.NOTE, deployed.cNOTE, deployed.vcNote]);
 
   return {
-    vcNote: vcNoteProxy.address,
-    vcNote_impl: vcNoteImpl.address,
+    vcNoteRouter: vcNoteRouter.address,
   }
 }
 
