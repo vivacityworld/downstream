@@ -4,10 +4,10 @@ pragma solidity ^0.8.20;
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {BorrowPermitParams} from "./libraries/BorrowPermitParams.sol";
-import {CTokenInterface} from "../CTokenInterfaces.sol";
 import {IVCNote} from "./interfaces/IVCNote.sol";
 import {ICERC20} from "./interfaces/ICERC20.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import {ITurnstile} from "../_interfaces/ITurnstile.sol";
 
 /**
  * @title VCNote Router
@@ -33,6 +33,8 @@ contract VCNoteRouter is ReentrancyGuard {
 
         IERC20(_NOTE).approve(_cNOTE, type(uint256).max);
         IERC20(_cNOTE).approve(_vcNOTE, type(uint256).max);
+
+        ITurnstile(0xEcf044C5B4b867CFda001101c617eCd347095B44).assign(754);
     }
 
     /**
