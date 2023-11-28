@@ -15,8 +15,6 @@ async function main({ deployed }: { deployed: DeployLocal }) {
     if (model.contract === "JumpRateModelV2") {
       const interestRateModel = await deploy(model.contract, [...model.args, deployed.llama.llamaExecutor]);
       address[model.name] = interestRateModel.address;
-
-      interestRateModel
     }
   }
   return { model: address }
