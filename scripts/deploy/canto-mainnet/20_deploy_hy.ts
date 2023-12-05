@@ -9,8 +9,8 @@ async function main({ deployed }: { deployed: DeployLocal }) {
   //       DEPLOY VCNOTE        //
   ////////////////////////////////
 
-  const compliance = "0x5544D84EAFC977a7eF00852B65B30f877A3eb338";
-  const hyVWEAX = "0x97aD76f823ACc6BF171e314e3B51733661Abea43";
+  // const compliance = "0x5544D84EAFC977a7eF00852B65B30f877A3eb338";
+  const hyVWEAX = "0x0E4289a95207CA653b60B0eB0b5848f29F4C3f72";
 
   const cRWAImpl = await deploy("CRWAToken", []);
   const cRWAProxy = await deploy("CErc20Delegator", [
