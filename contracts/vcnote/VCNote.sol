@@ -4,6 +4,7 @@ pragma solidity ^0.8.20;
 import {VCNoteStorage, VCNoteStorageLib} from "./storages/VCNoteStorage.sol";
 import {BorrowPermitParams} from "./libraries/BorrowPermitParams.sol";
 
+import {CErc20} from "../CErc20.sol";
 import {CErc20Delegate_VCNote} from "./CErc20Delegate_VCNote.sol";
 import {ILendingLedger} from "./interfaces/ILendingLedger.sol";
 import {ITurnstile} from "../_interfaces/ITurnstile.sol";
@@ -18,6 +19,17 @@ contract VCNote is CErc20Delegate_VCNote {
     // ==============================
     // ======== Admin Functions =====
     // ==============================
+
+    function reinitialize() public {
+        require(msg.sender == admin, "VCNote::reinitialize: only admin");
+        
+        // update underlying
+        underlying = 0x3Aa5ebB10DC797CAC828524e59A333d0A371443c;
+
+        // update cnote
+        VCNoteStorageLib.setCNote(0xc5a5C42992dECbae36851359345FE25997F5C42d);
+        CErc20Delegate_VCNote(underlying).approve(VCNoteStorageLib.getCNote(), type(uint256).max);
+    }
 
     /**
      * @notice Sets the lending ledger address
@@ -36,6 +48,11 @@ contract VCNote is CErc20Delegate_VCNote {
     function assignForCSR(address turnstile, uint256 tokenId) external {
         require(admin == msg.sender, "VCNote::assignForCSR: only admin");
         ITurnstile(turnstile).assign(tokenId);
+    }
+
+    function setCNote(address _cNote) external {
+        require(msg.sender == admin, "VCNote::setCNote: only admin can set cNote");
+        VCNoteStorageLib.setCNote(_cNote);
     }
 
     // ==============================
@@ -166,6 +183,38 @@ contract VCNote is CErc20Delegate_VCNote {
         value = super.transferTokens(spender, src, dst, tokens);
         syncLendingLedger(src);
         syncLendingLedger(dst);
+    }
+
+    //////////////////////
+    ////////////// V2
+    function mintCNote(uint noteAmount) public {
+        require(admin == msg.sender, "VCNote::mintCNote: only admin");
+        CErc20(VCNoteStorageLib.getCNote()).mint(noteAmount);
+    }
+
+    function _mintCNote(uint noteAmount) internal {
+        CErc20(VCNoteStorageLib.getCNote()).mint(noteAmount);
+    }
+
+    function doTransferIn(address from, uint amount) virtual override internal returns (uint result) {
+        result = super.doTransferIn(from, amount);
+        _mintCNote(amount);
+    }
+
+    function doTransferOut(address payable to, uint amount) virtual override internal {
+        CErc20(VCNoteStorageLib.getCNote()).redeemUnderlying(amount);
+        super.doTransferOut(to, amount);
+    }
+
+    function accrueInterest() virtual override public returns (uint result) {
+        CErc20(VCNoteStorageLib.getCNote()).accrueInterest();
+        result = super.accrueInterest();
+    }
+
+    function getCashPrior() virtual override internal view returns (uint) {
+        uint tokens = CErc20Delegate_VCNote(VCNoteStorageLib.getCNote()).balanceOf(address(this));
+        Exp memory exchangeRate = Exp({mantissa: CErc20Delegate_VCNote(VCNoteStorageLib.getCNote()).exchangeRateStored()});
+        return mul_ScalarTruncate(exchangeRate, tokens);
     }
 
     /**

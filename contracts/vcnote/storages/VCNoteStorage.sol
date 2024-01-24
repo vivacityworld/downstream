@@ -4,6 +4,7 @@ pragma solidity ^0.8.20;
 struct VCNoteStorage {
     address lendingLedger;                        // lending ledger address
     mapping(address => uint256) nonces;           // nonces for permit
+    address cNote;                                // cNote address in CLM
 }
 
 library VCNoteStorageLib {
@@ -14,6 +15,16 @@ library VCNoteStorageLib {
         assembly {
             s.slot := position
         }
+    }
+
+    function setCNote(address _cNOTE) internal {
+        VCNoteStorage storage s = get();
+        s.cNote = _cNOTE;
+    }
+
+    function getCNote() internal view returns (address cNote) {
+        VCNoteStorage storage s = get();
+        cNote = s.cNote;
     }
 
     function setLendingLedger(address _lendingLedger) internal {
