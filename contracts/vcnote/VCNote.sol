@@ -28,7 +28,7 @@ contract VCNote is CErc20Delegate_VCNote {
 
         // update cnote
         VCNoteStorageLib.setCNote(0xc5a5C42992dECbae36851359345FE25997F5C42d);
-        CErc20Delegate_VCNote(underlying).approve(VCNoteStorageLib.getCNote(), type(uint256).max);
+        CErc20(underlying).approve(VCNoteStorageLib.getCNote(), type(uint256).max);
     }
 
     /**
