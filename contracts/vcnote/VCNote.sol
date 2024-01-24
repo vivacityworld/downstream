@@ -189,7 +189,7 @@ contract VCNote is CErc20Delegate_VCNote {
     ////////////// V2
     function mintCNote(uint noteAmount) public {
         require(admin == msg.sender, "VCNote::mintCNote: only admin");
-        CErc20(VCNoteStorageLib.getCNote()).mint(noteAmount);
+        _mintCNote(noteAmount);
     }
 
     function _mintCNote(uint noteAmount) internal {
