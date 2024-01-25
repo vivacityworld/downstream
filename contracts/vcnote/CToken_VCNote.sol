@@ -333,7 +333,7 @@ abstract contract CToken_VCNote is CTokenInterface, ExponentialNoError, TokenErr
         if (accrualBlockNumberPrior == currentBlockNumber) {
             return NO_ERROR;
         }
-
+        
         /* Read the previous values out of storage */
         uint cashPrior = getCashPrior();
         uint borrowsPrior = totalBorrows;
@@ -359,7 +359,14 @@ abstract contract CToken_VCNote is CTokenInterface, ExponentialNoError, TokenErr
         Exp memory simpleInterestFactor = mul_(Exp({mantissa: borrowRateMantissa}), blockDelta);
         uint interestAccumulated = mul_ScalarTruncate(simpleInterestFactor, borrowsPrior);
         uint totalBorrowsNew = interestAccumulated + borrowsPrior;
-        uint totalReservesNew = mul_ScalarTruncateAddUInt(Exp({mantissa: reserveFactorMantissa}), interestAccumulated, reservesPrior);
+
+        uint baseRate = interestRateModel.baseRatePerBlock();
+        Exp memory baseInterestFactor = mul_(Exp({mantissa: baseRate}), blockDelta);
+        uint baseInterestAccumulated = mul_ScalarTruncate(baseInterestFactor, borrowsPrior);
+
+        uint interestAccumulatedWithoutBase = interestAccumulated - baseInterestAccumulated;
+
+        uint totalReservesNew = mul_ScalarTruncateAddUInt(Exp({mantissa: reserveFactorMantissa}), interestAccumulatedWithoutBase, reservesPrior) + baseInterestAccumulated;
         uint borrowIndexNew = mul_ScalarTruncateAddUInt(simpleInterestFactor, borrowIndexPrior, borrowIndexPrior);
 
         /////////////////////////
