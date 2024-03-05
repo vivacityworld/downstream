@@ -65,7 +65,8 @@ export interface Contracts {
 	vivaScript: VivacityManageScript;
 	stakerStrategy: string;
 	llama: LlamaAddress;
-	vcNoteRouter: VCNoteRouter;
+	vcNoteInterestModel: JumpRateModelV2;
+	// vcNoteRouter: VCNoteRouter;
 }
 
 const deployFixture = async () => {
@@ -97,8 +98,6 @@ const deployFixture = async () => {
 
 	const MockTurnstileFactory = await ethers.getContractFactory("MockTurnstile");
 
-	const VCNoteRouter = await ethers.getContractFactory("VCNoteRouter");
-
 	//////////////////////////////////////
 	//      DEPLOY Mock Comptroller     //
 	//////////////////////////////////////
@@ -123,8 +122,8 @@ const deployFixture = async () => {
 	// cToken
 	const cNoteInterestRateModel = await JumpRateModelV2Factory.deploy(
 		"0",
-		"1000000000000000000",
-		"4000000000000000000",
+		"100000000000000000000",
+		"400000000000000000000",
 		"700000000000000000",
 		deployer.address
 	);
@@ -240,13 +239,14 @@ const deployFixture = async () => {
 	const vivacityManageScriptFactory = await ethers.getContractFactory("VivacityManageScript");
 	const vivacityManageScript = await vivacityManageScriptFactory.deploy();
 
-	const llama = {
+	const llama: LlamaAddress = {
 		llamaCore: core.address,
 		llamaExecutor: executor.address,
 		llamaPolicy: policy.address,
 		llamaLens: llamaLens.address,
 		bootstrapStrategy: deployerStrategy,
-		coreTeamStrategy: stakingModuleStrategy,
+		coreTeamStrategy50: stakingModuleStrategy,
+		coreTeamStrategy100: stakingModuleStrategy,
 		stakingModuleStrategy: stakingModuleStrategy,
 		stakerStrategy: stakerStrategy,
 		llamaGovScript: llamaGovernanceScript.address,
@@ -291,7 +291,7 @@ const deployFixture = async () => {
 	/////////////////////////////////////////////////////////////
 
 	const priceOracleRouter = await PriceOracleRouterFactory.deploy();
-	const vcNotePriceOracle = await VCNotePriceOracleFactory.deploy(cNoteProxy.address);
+	const vcNotePriceOracle = await VCNotePriceOracleFactory.deploy(note.address);
 
 	const ofPriceOracleRouter = await OffchainFundPriceOracleRouterFactory.deploy();
 	const sdycPriceOracleRouter = await SDYCPriceOracleRouterFactory.deploy();
@@ -309,10 +309,10 @@ const deployFixture = async () => {
 	/////////////////////////////////////////////////////////////
 
 	const jumpRateModelV2 = await JumpRateModelV2Factory.deploy(
-		"0",                    // baseRatePerYear
-		"1000000000000000000",  // multiplierPerYear
-		"4000000000000000000",  // jumpMultiplierPerYear
-		"700000000000000000",   // kink_
+		"2500000000000000",		// baseRatePerYear
+		"2500000000000000",		// multiplierPerYear
+		"1225000000000000000",  // jumpMultiplierPerYear
+		"800000000000000000",	// kink_
 		deployer.address        // _owner
 	);
 
@@ -334,12 +334,12 @@ const deployFixture = async () => {
 
 	const vcNoteImpl = await vcNoteDelegateFactory.deploy();
 	const vcNoteProxy = await CErc20DelegatorFactory.deploy(
-		cNoteProxy.address,
+		note.address,
 		unitroller.address,
 		jumpRateModelV2.address,
 		ethers.utils.parseEther("1"),
-		`ccNote`,
-		`ccNote`,
+		`vcNote`,
+		`vcNote`,
 		18,
 		deployer.address,
 		vcNoteImpl.address,
@@ -419,15 +419,13 @@ const deployFixture = async () => {
 		[policy, "setRoleHolder", [STAKING_MODULE_ROLE, staking.address, 1, ethers.BigNumber.from(2).pow(64).sub(1)]],
 	]);
 
-
-
 	const cOF = await ethers.getContractAt("CRWAToken", ofProxy.address);
 	const cSDYC = await ethers.getContractAt("CRWAToken", sdycProxy.address);
 	const compt = await ethers.getContractAt("Comptroller", unitroller.address);
 	const vcn = await ethers.getContractAt("VCNote", vcNoteProxy.address);
 	const cn = await ethers.getContractAt("CErc20Delegate", cNoteProxy.address);
 
-	const vcnr = await VCNoteRouter.deploy(note.address, cn.address, vcn.address);
+	await vcn.reinitialize(note.address, cNoteProxy.address, "0x0000000000000000000000000000000000000000");
 
 	return {
 		viva,
@@ -458,7 +456,7 @@ const deployFixture = async () => {
 		stakerStrategy,
 		llama,
 		ofWhitelistRouter,
-		vcNoteRouter: vcnr,
+		vcNoteInterestModel: jumpRateModelV2
 	}
 }
 

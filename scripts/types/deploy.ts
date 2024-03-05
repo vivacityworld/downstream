@@ -14,6 +14,7 @@ export interface DeployLocal {
   oracle?: Oracle;
   comptroller?: string;
   vcNote?: string;
+  vcNoteV1?: string;
   staking?: string;
   vivaLens?: string;
   rwa?: any;
@@ -22,6 +23,7 @@ export interface DeployLocal {
   cSPCT?: any,
   SPCTOracleRouter?: any,
   SPCTWhitelistRouter?: any,
+  vcNoteRouter?: any,
 }
 
 export interface LlamaFrameworkAddress {
@@ -81,4 +83,5 @@ export interface Oracle {
   sdycPriceOracleRouter: string;
   offchainFundPriceOracleRouter: string;
   vcNotePriceOracle: string;
+  vcNotePriceOracleV1: string;
 }
