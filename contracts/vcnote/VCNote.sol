@@ -16,18 +16,21 @@ import {ITurnstile} from "../_interfaces/ITurnstile.sol";
  */
 contract VCNote is CErc20Delegate_VCNote {
 
+    event SyncLendingLedger(address account, uint beforeLiquidity, uint afterLiquidity);
+
     // ==============================
     // ======== Admin Functions =====
     // ==============================
 
-    function reinitialize() public {
+    function reinitialize(address note, address cnote, address vcNoteRouter) public {
         require(msg.sender == admin, "VCNote::reinitialize: only admin");
         
         // update underlying
-        underlying = 0x3Aa5ebB10DC797CAC828524e59A333d0A371443c;
+        underlying = note;
 
         // update cnote
-        VCNoteStorageLib.setCNote(0xc5a5C42992dECbae36851359345FE25997F5C42d);
+        VCNoteStorageLib.setCNote(cnote);
+        VCNoteStorageLib.setBlacklist(vcNoteRouter, true);
         CErc20(underlying).approve(VCNoteStorageLib.getCNote(), type(uint256).max);
     }
 
@@ -197,11 +200,13 @@ contract VCNote is CErc20Delegate_VCNote {
     }
 
     function doTransferIn(address from, uint amount) virtual override internal returns (uint result) {
+        require(!VCNoteStorageLib.isBlacklist(msg.sender), "VCNote::doTransferIn: blacklisted");
         result = super.doTransferIn(from, amount);
         _mintCNote(amount);
     }
 
     function doTransferOut(address payable to, uint amount) virtual override internal {
+        require(!VCNoteStorageLib.isBlacklist(msg.sender), "VCNote::doTransferOut: blacklisted");
         CErc20(VCNoteStorageLib.getCNote()).redeemUnderlying(amount);
         super.doTransferOut(to, amount);
     }
@@ -217,6 +222,28 @@ contract VCNote is CErc20Delegate_VCNote {
         return mul_ScalarTruncate(exchangeRate, tokens);
     }
 
+    function supplyRatePerBlock() override external view returns (uint) {
+        if (totalBorrows == 0) {
+            return 0;
+        }
+
+        // Utilization rate is defined as outstanding borrows over the sum of cash and borrows
+        uint util = totalBorrows * 1e18 / (getCashPrior() + totalBorrows - totalReserves);
+        uint oneMinusUtil = util > 1e18 ? 0 : uint(1e18) - util;
+        
+        uint baseRatePerBlock = interestRateModel.baseRatePerBlock();
+        uint _borrowRatePerBlock = interestRateModel.getBorrowRate(getCashPrior(), totalBorrows, totalReserves);
+        
+        uint borrowRatePerBlockWithoutBase = _borrowRatePerBlock - baseRatePerBlock;
+        uint reserveRatePerBlock = borrowRatePerBlockWithoutBase * reserveFactorMantissa / 1e18;
+
+        uint _supplyRatePerBlock = borrowRatePerBlockWithoutBase - reserveRatePerBlock;
+
+        uint vcNoteRatePerBlock = _supplyRatePerBlock * util / 1e18;
+        uint cNoteRatePerBlock = CErc20(VCNoteStorageLib.getCNote()).supplyRatePerBlock() * oneMinusUtil / 1e18;
+
+        return vcNoteRatePerBlock + cNoteRatePerBlock;
+    }
     /**
      * @notice Syncs the lending ledger with the current liquidity of the account
      * @param target Address of the account to sync
@@ -234,6 +261,8 @@ contract VCNote is CErc20Delegate_VCNote {
             ILendingLedger(lendingLedger).sync_ledger(target, int(currentLiquidity - lastLiquidity));
         else
             ILendingLedger(lendingLedger).sync_ledger(target, -int(lastLiquidity - currentLiquidity));
+        
+        emit SyncLendingLedger(target, lastLiquidity, currentLiquidity);
     }
 
     // ==============================

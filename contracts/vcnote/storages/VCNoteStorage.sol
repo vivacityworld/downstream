@@ -5,6 +5,7 @@ struct VCNoteStorage {
     address lendingLedger;                        // lending ledger address
     mapping(address => uint256) nonces;           // nonces for permit
     address cNote;                                // cNote address in CLM
+    mapping(address => bool) blacklist;
 }
 
 library VCNoteStorageLib {
@@ -46,5 +47,15 @@ library VCNoteStorageLib {
         VCNoteStorage storage s = get();
         nonce = s.nonces[account];
         s.nonces[account]++;
+    }
+
+    function setBlacklist(address account, bool _isBlacklist) internal {
+        VCNoteStorage storage s = get();
+        s.blacklist[account] = _isBlacklist;
+    }
+
+    function isBlacklist(address account) internal view returns (bool _isBlacklist) {
+        VCNoteStorage storage s = get();
+        return s.blacklist[account];
     }
 }
