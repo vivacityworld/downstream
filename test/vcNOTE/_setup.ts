@@ -10,7 +10,7 @@ interface VCNoteTestSetupParam {
   contracts: Contracts;
 }
 
-export default async function setupVCNoteTest({ signer, borrower, receiver, contracts }: VCNoteTestSetupParam) {
+export default async function setupVCNote({ signer, borrower, receiver, contracts }: VCNoteTestSetupParam) {
 
   ///////////////////////////////////////////////////
   ///////         SETUP ORACLE PARAMS         ///////
@@ -38,15 +38,16 @@ export default async function setupVCNoteTest({ signer, borrower, receiver, cont
 
   await contracts.comptroller._setCollateralFactor(contracts.cOF.address, ethers.utils.parseEther("0.8"));
 
+  await contracts.vcNote._setReserveFactor(ethers.utils.parseEther("0.1"));
 
   ///////////////////////////////////////////////////
   ///////            APPROVE TOKEN            ///////
   ///////////////////////////////////////////////////
 
   await contracts.note.approve(contracts.cNote.address, ethers.constants.MaxUint256);
-  await contracts.cNote.approve(contracts.vcNote.address, ethers.constants.MaxUint256);
+  await contracts.note.approve(contracts.vcNote.address, ethers.constants.MaxUint256);
   await contracts.note.connect(borrower).approve(contracts.cNote.address, ethers.constants.MaxUint256);
-  await contracts.cNote.connect(borrower).approve(contracts.vcNote.address, ethers.constants.MaxUint256);
+  await contracts.note.connect(borrower).approve(contracts.vcNote.address, ethers.constants.MaxUint256);
   await contracts.of.connect(borrower).approve(contracts.cOF.address, ethers.constants.MaxUint256);
 
   ///////////////////////////////////////////////////
@@ -59,7 +60,7 @@ export default async function setupVCNoteTest({ signer, borrower, receiver, cont
   // signer - mint cNOTE
   await contracts.note.mint(signer.address, mintAmount.mul(2));
   await contracts.note.approve(contracts.cNote.address, mintAmount);
-  await contracts.cNote.mint(mintAmount);
+  // await contracts.cNote.mint(mintAmount);
 
   await contracts.of.mint(signer.address, mintAmount);
   await contracts.of.approve(contracts.cOF.address, mintAmount);
@@ -69,7 +70,7 @@ export default async function setupVCNoteTest({ signer, borrower, receiver, cont
 
   // borrower - mint cNOTE
   await contracts.note.mint(borrower.address, mintAmount);
-  await contracts.cNote.connect(borrower).mint(mintAmount);
+  // await contracts.cNote.connect(borrower).mint(mintAmount);
   // borrower - mint vcNOTE
   await contracts.vcNote.connect(borrower).mint(mintAmount);
   // borrower - mint mock offchain fund (rwa)
@@ -88,6 +89,5 @@ export default async function setupVCNoteTest({ signer, borrower, receiver, cont
   await contracts.cOF.setWhitelistRouter(contracts.whitelistRouter.address);
   await contracts.whitelistRouter.setWhitelistContract(contracts.of.address, contracts.ofWhitelistRouter.address);
   await contracts.ofWhitelistRouter.setWhitelistContract(contracts.of.address, contracts.ofWhitelist.address);
-  await contracts.ofWhitelist.setWhitelisted(contracts.vcNoteRouter.address, true);
   await contracts.ofWhitelist.setWhitelisted(signer.address, true);
 }

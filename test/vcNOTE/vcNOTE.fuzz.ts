@@ -41,7 +41,7 @@ describe("vcNOTE", function () {
   it("Fuzz test", async function () {
     this.timeout(1e8);
     await contracts.vcNote.setLendingLedger(contracts.lendingLedger.address);
-    await contracts.vcNote.mint((await contracts.cNote.balanceOf(signer.address)).div(2));
+    await contracts.vcNote.mint((await contracts.note.balanceOf(signer.address)).div(2));
     await contracts.vcNote.transfer(receiver.address, ethers.utils.parseEther("1"));
 
     let DAY = 3600 * 24;
@@ -54,7 +54,7 @@ describe("vcNOTE", function () {
       const denom = Math.floor(Math.random() * 10) + 10;
       switch (action) {
         case 0:
-          const mintAmount = (await contracts.cNote.balanceOf(signer.address)).div(denom);
+          const mintAmount = (await contracts.note.balanceOf(signer.address)).div(denom);
           await contracts.vcNote.mint(mintAmount);
           await checkEpochAndLiquidity(currentTime, signer.address);
           console.log(i, "[success] mint              ", mintAmount);
@@ -82,10 +82,12 @@ describe("vcNOTE", function () {
           const cNoteAmount = await contracts.cNote.callStatic.balanceOf(signer.address);
           const shortfall = (await contracts.comptroller.getAccountLiquidity(borrower.address))[2];
           const liquidateTokenAmount = (cNoteAmount.lt(shortfall) ? cNoteAmount : shortfall).div(denom);
-          await contracts.vcNote.liquidateBorrow(borrower.address, liquidateTokenAmount, contracts.vcNote.address);
-          await checkEpochAndLiquidity(currentTime, signer.address);
-          await checkEpochAndLiquidity(currentTime, borrower.address);
-          console.log(i, "[success] liquidate         ", liquidateTokenAmount);
+          if (!liquidateTokenAmount.isZero()) {
+            await contracts.vcNote.liquidateBorrow(borrower.address, liquidateTokenAmount, contracts.vcNote.address);
+            await checkEpochAndLiquidity(currentTime, signer.address);
+            await checkEpochAndLiquidity(currentTime, borrower.address);
+            console.log(i, "[success] liquidate         ", liquidateTokenAmount);
+          }
           break;
         case 5:
           await contracts.vcNote.syncLendingLedger(signer.address);
