@@ -6,8 +6,9 @@ import {BorrowPermitParams} from "./libraries/BorrowPermitParams.sol";
 
 import {CErc20} from "../CErc20.sol";
 import {CErc20Delegate_VCNote} from "./CErc20Delegate_VCNote.sol";
-import {ILendingLedger} from "./interfaces/ILendingLedger.sol";
+import {ILendingLedgerV2} from "./interfaces/ILendingLedgerV2.sol";
 import {ITurnstile} from "../_interfaces/ITurnstile.sol";
+import {IVivaPoint} from "./interfaces/IVivaPoint.sol";
 
 /**
  * @title VCNote Contracts
@@ -22,7 +23,7 @@ contract VCNote is CErc20Delegate_VCNote {
     // ======== Admin Functions =====
     // ==============================
 
-    function reinitialize(address note, address cnote, address vcNoteRouter) public {
+    function reinitialize(address note, address cnote, address vcNoteRouter, address _vivaPoint) public {
         require(msg.sender == admin, "VCNote::reinitialize: only admin");
         
         // update underlying
@@ -31,7 +32,17 @@ contract VCNote is CErc20Delegate_VCNote {
         // update cnote
         VCNoteStorageLib.setCNote(cnote);
         VCNoteStorageLib.setBlacklist(vcNoteRouter, true);
+        VCNoteStorageLib.setVivaPoint(_vivaPoint);
         CErc20(underlying).approve(VCNoteStorageLib.getCNote(), type(uint256).max);
+    }
+
+    /**
+     * @notice Sets the vivaPoint address
+     * @param _vivaPoint Address of the vivaPoint
+     */
+    function setVivaPoint(address _vivaPoint) external {
+        require(msg.sender == admin, "VCNote::setVivaPoint: only admin can set vivaPoint");
+        VCNoteStorageLib.setVivaPoint(_vivaPoint);
     }
 
     /**
@@ -256,11 +267,10 @@ contract VCNote is CErc20Delegate_VCNote {
         uint lastLiquidity = getLastLiquidity(lendingLedger, target);
         uint currentLiquidity = getStoredBalanceOfUnderlying(target);
 
-        if (lastLiquidity == currentLiquidity) return; 
-        if (currentLiquidity > lastLiquidity)
-            ILendingLedger(lendingLedger).sync_ledger(target, int(currentLiquidity - lastLiquidity));
-        else
-            ILendingLedger(lendingLedger).sync_ledger(target, -int(lastLiquidity - currentLiquidity));
+        if (lastLiquidity == currentLiquidity) return;
+        int liquidityDelta = (currentLiquidity > lastLiquidity) ? int(currentLiquidity - lastLiquidity) : -int(lastLiquidity - currentLiquidity);
+        ILendingLedgerV2(lendingLedger).sync_ledger(target, liquidityDelta);
+        IVivaPoint(VCNoteStorageLib.getVivaPoint()).update(target, currentLiquidity);
         
         emit SyncLendingLedger(target, lastLiquidity, currentLiquidity);
     }
@@ -271,12 +281,12 @@ contract VCNote is CErc20Delegate_VCNote {
 
     /**
      * @notice Gets the last liquidity in the lending ledger.
+     * @param lendingLedger Address of the lendingLedger
      * @param account Address of the account
      * @return liquidity liquidity of the account
      */
     function getLastLiquidity(address lendingLedger, address account) internal view returns (uint256) {
-        uint256 lastEpoch = ILendingLedger(lendingLedger).lendingMarketBalancesEpoch(address(this), account);
-        return ILendingLedger(lendingLedger).lendingMarketBalances(address(this), account, lastEpoch);
+        return ILendingLedgerV2(lendingLedger).userInfo(address(this), account).amount;
     }
 
     /**

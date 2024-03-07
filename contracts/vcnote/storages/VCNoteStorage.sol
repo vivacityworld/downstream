@@ -6,6 +6,7 @@ struct VCNoteStorage {
     mapping(address => uint256) nonces;           // nonces for permit
     address cNote;                                // cNote address in CLM
     mapping(address => bool) blacklist;
+    address vivaPoint;
 }
 
 library VCNoteStorageLib {
@@ -57,5 +58,15 @@ library VCNoteStorageLib {
     function isBlacklist(address account) internal view returns (bool _isBlacklist) {
         VCNoteStorage storage s = get();
         return s.blacklist[account];
+    }
+
+    function setVivaPoint(address _vivaPoint) internal {
+        VCNoteStorage storage s = get();
+        s.vivaPoint = _vivaPoint;
+    }
+
+    function getVivaPoint() internal view returns (address vivaPoint) {
+        VCNoteStorage storage s = get();
+        vivaPoint = s.vivaPoint;
     }
 }
