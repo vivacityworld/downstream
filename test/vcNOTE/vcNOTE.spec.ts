@@ -3,7 +3,7 @@ import { ethers } from "hardhat";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { loadFixture, mine } from "@nomicfoundation/hardhat-network-helpers";
 import deployFixture, { Contracts } from "../_fixture/deployFixture";
-import { MockLendingLedger, VCNote } from "../../typechain";
+import { MockLendingLedgerV2, VCNote, VivaPoint } from "../../typechain";
 import setupVCNote from "./_setup";
 
 
@@ -15,13 +15,15 @@ describe("vcNOTE", function () {
   let noadmin: SignerWithAddress;
   let contracts: Contracts;
   let vcNote: VCNote;
-  let lendingLedger: MockLendingLedger;
+  let lendingLedger: MockLendingLedgerV2;
+  let vivaPoint: VivaPoint;
 
   before(async () => {
     [signer, borrower, receiver, noadmin] = await ethers.getSigners();
     contracts = await loadFixture(deployFixture);
     vcNote = contracts.vcNote;
     lendingLedger = contracts.lendingLedger;
+    vivaPoint = contracts.vivaPoint;
     await setupVCNote({ signer, borrower, receiver, contracts });
   });
 
@@ -60,12 +62,12 @@ describe("vcNOTE", function () {
 
   it("check lendingLedger if first", async function () {
     // ================ params ================
-    const epoch = await lendingLedger.lendingMarketBalancesEpoch(vcNote.address, signer.address);
-    const liquidity = await lendingLedger.lendingMarketBalances(vcNote.address, signer.address, epoch);
+    const lendingLedgerUserInfo = await lendingLedger.userInfo(vcNote.address, signer.address);
+    const vivaPointUserInfo = await vivaPoint.userInfos(signer.address);
 
     // ============== validation ==============
-    expect(epoch).eq(0);
-    expect(liquidity).eq(0);
+    expect(lendingLedgerUserInfo.amount).eq(0);
+    expect(vivaPointUserInfo.amount).eq(0);
   });
 
   it("mint test", async function () {
@@ -82,14 +84,13 @@ describe("vcNOTE", function () {
     await vcNote.mint(mintAmount);
 
     // ============== validation ==============
-    const epoch = await lendingLedger.lendingMarketBalancesEpoch(vcNote.address, signer.address);
-    const liquidity = await lendingLedger.lendingMarketBalances(vcNote.address, signer.address, epoch);
+    const lendingLedgerUserInfo = await lendingLedger.userInfo(vcNote.address, signer.address);
+    const vivaPointUserInfo = await vivaPoint.userInfos(signer.address);
 
-    const currentEpoch = Math.floor(Date.now() / 1000 / WEEK) * WEEK;
     const currentLiquidity = await vcNote.callStatic.balanceOfUnderlying(signer.address);
 
-    expect(epoch).eq(currentEpoch);
-    expect(liquidity).eq(currentLiquidity);
+    expect(lendingLedgerUserInfo.amount).eq(currentLiquidity);
+    expect(vivaPointUserInfo.amount).eq(currentLiquidity);
 
     const balanceVCNoteAfter = await vcNote.balanceOf(signer.address);
     const balanceNoteAfter = await contracts.note.balanceOf(signer.address);
@@ -232,14 +233,13 @@ describe("vcNOTE", function () {
     await vcNote.redeem(redeemAmount);
 
     // ============== validation ==============
-    const epoch = await lendingLedger.lendingMarketBalancesEpoch(vcNote.address, signer.address);
-    const liquidity = await lendingLedger.lendingMarketBalances(vcNote.address, signer.address, epoch);
-    const currentEpoch = Math.floor(Date.now() / 1000 / WEEK) * WEEK;
+    const lendingLedgerUserInfo = await lendingLedger.userInfo(vcNote.address, signer.address);
+    const vivaPointUserInfo = await vivaPoint.userInfos(signer.address);
     const currentLiquidity = await vcNote.callStatic.balanceOfUnderlying(signer.address);
 
     // ============== validation ==============
-    expect(epoch).eq(currentEpoch);
-    expect(liquidity).eq(currentLiquidity);
+    expect(lendingLedgerUserInfo.amount).eq(currentLiquidity);
+    expect(vivaPointUserInfo.amount).eq(currentLiquidity);
     expect(await contracts.note.balanceOf(contracts.vcNote.address)).eq(0);
 
 
@@ -275,13 +275,12 @@ describe("vcNOTE", function () {
     await vcNote.redeemUnderlying(redeemUnderlyingAmount);
 
     // ============== validation ==============
-    const epoch = await lendingLedger.lendingMarketBalancesEpoch(vcNote.address, signer.address);
-    const liquidity = await lendingLedger.lendingMarketBalances(vcNote.address, signer.address, epoch);
-    const currentEpoch = Math.floor(Date.now() / 1000 / WEEK) * WEEK;
+    const lendingLedgerUserInfo = await lendingLedger.userInfo(vcNote.address, signer.address);
+    const vivaPointUserInfo = await vivaPoint.userInfos(signer.address);
     const currentLiquidity = await vcNote.callStatic.balanceOfUnderlying(signer.address);
 
-    expect(epoch).eq(currentEpoch);
-    expect(liquidity).eq(currentLiquidity);
+    expect(lendingLedgerUserInfo.amount).eq(currentLiquidity);
+    expect(vivaPointUserInfo.amount).eq(currentLiquidity);
     expect(await contracts.note.balanceOf(contracts.vcNote.address)).eq(0);
 
     const balanceVCNoteAfter = await vcNote.balanceOf(signer.address);
@@ -309,22 +308,21 @@ describe("vcNOTE", function () {
 
     // ============== validation ==============
     // sender
-    const epoch = await lendingLedger.lendingMarketBalancesEpoch(vcNote.address, signer.address);
-    const liquidity = await lendingLedger.lendingMarketBalances(vcNote.address, signer.address, epoch);
+    const lendingLedgerUserInfo = await lendingLedger.userInfo(vcNote.address, signer.address);
+    const vivaPointUserInfo = await vivaPoint.userInfos(signer.address);
     const currentEpoch = Math.floor(Date.now() / 1000 / WEEK) * WEEK;
     const currentLiquidity = await vcNote.callStatic.balanceOfUnderlying(signer.address);
 
-    expect(epoch).eq(currentEpoch);
-    expect(liquidity).eq(currentLiquidity);
+    expect(lendingLedgerUserInfo.amount).eq(currentLiquidity);
+    expect(vivaPointUserInfo.amount).eq(currentLiquidity);
 
     // receiver
-    const receiverEpoch = await lendingLedger.lendingMarketBalancesEpoch(vcNote.address, receiver.address);
-    const receiverLiquidity = await lendingLedger.lendingMarketBalances(vcNote.address, receiver.address, epoch);
-    const receiverCurrentEpoch = Math.floor(Date.now() / 1000 / WEEK) * WEEK;
+    const receiverLendingLedgerUserInfo = await lendingLedger.userInfo(vcNote.address, receiver.address);
+    const receiverVivaPointUserInfo = await vivaPoint.userInfos(receiver.address);
     const receiverCurrentLiquidity = await vcNote.callStatic.balanceOfUnderlying(receiver.address);
 
-    expect(receiverEpoch).eq(receiverCurrentEpoch);
-    expect(receiverLiquidity).eq(receiverCurrentLiquidity);
+    expect(receiverLendingLedgerUserInfo.amount).eq(receiverCurrentLiquidity);
+    expect(receiverVivaPointUserInfo.amount).eq(receiverCurrentLiquidity);
 
     expect(await contracts.note.balanceOf(contracts.vcNote.address)).eq(0);
   })
@@ -339,42 +337,34 @@ describe("vcNOTE", function () {
 
     // ============== validation ==============
     // liquidator
-    const epoch = await lendingLedger.lendingMarketBalancesEpoch(vcNote.address, signer.address);
-    const liquidity = await lendingLedger.lendingMarketBalances(vcNote.address, signer.address, epoch);
-
-    const currentEpoch = Math.floor(Date.now() / 1000 / WEEK) * WEEK;
+    const lendingLedgerUserInfo = await lendingLedger.userInfo(vcNote.address, signer.address);
+    const vivaPointUserInfo = await vivaPoint.userInfos(signer.address);
     const currentLiquidity = await vcNote.callStatic.balanceOfUnderlying(signer.address);
-
-    expect(epoch).eq(currentEpoch);
-    expect(liquidity).eq(currentLiquidity);
+    expect(lendingLedgerUserInfo.amount).eq(currentLiquidity);
+    expect(vivaPointUserInfo.amount).eq(currentLiquidity);
 
     // borrower
-    const receiverEpoch = await lendingLedger.lendingMarketBalancesEpoch(vcNote.address, borrower.address);
-    const receiverLiquidity = await lendingLedger.lendingMarketBalances(vcNote.address, borrower.address, epoch);
-
-    const receiverCurrentEpoch = Math.floor(Date.now() / 1000 / WEEK) * WEEK;
-    const receiverCurrentLiquidity = await vcNote.callStatic.balanceOfUnderlying(borrower.address);
-
-    expect(receiverEpoch).eq(receiverCurrentEpoch);
-    expect(receiverLiquidity).eq(receiverCurrentLiquidity);
+    const borrowerLendingLedgerUserInfo = await lendingLedger.userInfo(vcNote.address, borrower.address);
+    const borrowerVivaPointUserInfo = await vivaPoint.userInfos(borrower.address);
+    const borrowerCurrentLiquidity = await vcNote.callStatic.balanceOfUnderlying(borrower.address);
+    expect(borrowerLendingLedgerUserInfo.amount).eq(borrowerCurrentLiquidity);
+    expect(borrowerVivaPointUserInfo.amount).eq(borrowerCurrentLiquidity);
 
     expect(await contracts.note.balanceOf(contracts.vcNote.address)).eq(0);
   })
 
-  it("syncLendingLedger test", async function () {
+  it("syncLendingLedger/updateVivaPoint test", async function () {
     // ================ action ================
     await mine(100);
     await vcNote.syncLendingLedger(signer.address);
 
     // ============== validation ==============
-    const calcEpoch = Math.floor(Date.now() / 1000 / WEEK) * WEEK;
+    const lendingLedgerUserInfo = await lendingLedger.userInfo(vcNote.address, signer.address);
+    const vivaPointUserInfo = await vivaPoint.userInfos(signer.address);
     const calcLiquidity = await vcNote.callStatic.balanceOfUnderlying(signer.address);
 
-    const epoch = await lendingLedger.lendingMarketBalancesEpoch(vcNote.address, signer.address);
-    const liquidity = await lendingLedger.lendingMarketBalances(vcNote.address, signer.address, epoch);
-
-    expect(calcEpoch).eq(epoch);
-    expect(calcLiquidity).eq(liquidity);
+    expect(lendingLedgerUserInfo.amount).eq(calcLiquidity);
+    expect(vivaPointUserInfo.amount).eq(calcLiquidity);
   })
 
   it("interestModal update parameter", async function () {
@@ -506,8 +496,6 @@ describe("vcNOTE", function () {
     const borrowRatePerYear = ethers.utils.formatEther(borrowRate.mul(blockPerYear));
     const supplyRatePerYear = ethers.utils.formatEther(supplyRate.mul(blockPerYear));
 
-    console.log("borrowRatePerYear", borrowRatePerYear);
-    console.log("supplyRatePerYear", supplyRatePerYear);
     expect(parseFloat(borrowRatePerYear)).gt(0.25);
     expect(parseFloat(supplyRatePerYear)).gt(0.22275);
 

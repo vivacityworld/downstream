@@ -319,6 +319,8 @@ describe("vcNOTE v2 Upgrade", function () {
     await (vcNote as VCNote).reinitialize(note.address, cNote.address, vcNoteRouter.address, vivaPoint.address);
     await oracle.setOracle(vcNoteProxy.address, vcNotePriceOracle.address);
 
+    await vivaPoint.setWhitelist(vcNote.address, true);
+
     let totalShareAfter;
     let totalShareToNoteAfter;
     let totalCashAfter;
