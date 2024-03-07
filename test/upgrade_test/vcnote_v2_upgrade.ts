@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import { ethers } from "hardhat";
-import { CErc20, Comptroller, MockERC20, VCNote, VCNoteRouter, VCNoteV1 } from "../../typechain";
+import { CErc20, Comptroller, MockERC20, VCNote, VCNoteRouter, VCNoteV1, VivaPoint } from "../../typechain";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { mine } from "@nomicfoundation/hardhat-network-helpers";
 
@@ -14,6 +14,7 @@ describe("vcNOTE v2 Upgrade", function () {
   let comp: Comptroller;
   let rwa: MockERC20;
   let vcRwa: CErc20;
+  let vivaPoint: VivaPoint;
   let signer: SignerWithAddress;
   let minter: SignerWithAddress;
   let suppliers: SignerWithAddress[];
@@ -209,6 +210,11 @@ describe("vcNOTE v2 Upgrade", function () {
     const vcNoteRouterFactory = await ethers.getContractFactory("VCNoteRouter");
     vcNoteRouter = await vcNoteRouterFactory.deploy(note.address, cNote.address, vcNoteProxy.address);
 
+    const vivaPointFactory = await ethers.getContractFactory("VivaPoint");
+
+    const blockNumber = await ethers.provider.getBlockNumber();
+    vivaPoint = await vivaPointFactory.deploy(signer.address, blockNumber + 10);
+
     ////////////////////////////////////
     //            SETUP VIVA          //
     ////////////////////////////////////
@@ -310,7 +316,7 @@ describe("vcNOTE v2 Upgrade", function () {
     vcNote = await ethers.getContractAt("VCNote", vcNoteProxy.address);
 
     await vcNoteProxy._setImplementation(vcNoteV2Impl.address, false, []);
-    await (vcNote as VCNote).reinitialize(note.address, cNote.address, vcNoteRouter.address);
+    await (vcNote as VCNote).reinitialize(note.address, cNote.address, vcNoteRouter.address, vivaPoint.address);
     await oracle.setOracle(vcNoteProxy.address, vcNotePriceOracle.address);
 
     let totalShareAfter;
