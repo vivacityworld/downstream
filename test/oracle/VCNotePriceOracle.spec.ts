@@ -25,7 +25,7 @@ describe("VCNotePriceOracle", function () {
   it("[error] getUnderlyingPrice", async function () {
     // ========== action & validation =========
     await expect(vcNotePriceOracle.getUnderlyingPrice(contracts.cOF.address))
-      .revertedWith("VCNotePriceOracle: not cnote");
+      .revertedWith("VCNotePriceOracle: not note");
   });
 
   it("getUnderlyingPrice", async function () {
@@ -33,6 +33,6 @@ describe("VCNotePriceOracle", function () {
     const price = await vcNotePriceOracle.getUnderlyingPrice(vcNote.address);
 
     // ============== validation ==============
-    expect(price).eq(await cNote.exchangeRateStored());
+    expect(price).eq(ethers.utils.parseEther("1"));
   });
 });

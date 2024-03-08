@@ -4,6 +4,9 @@ pragma solidity ^0.8.20;
 struct VCNoteStorage {
     address lendingLedger;                        // lending ledger address
     mapping(address => uint256) nonces;           // nonces for permit
+    address cNote;                                // cNote address in CLM
+    mapping(address => bool) blacklist;
+    address vivaPoint;
 }
 
 library VCNoteStorageLib {
@@ -14,6 +17,16 @@ library VCNoteStorageLib {
         assembly {
             s.slot := position
         }
+    }
+
+    function setCNote(address _cNOTE) internal {
+        VCNoteStorage storage s = get();
+        s.cNote = _cNOTE;
+    }
+
+    function getCNote() internal view returns (address cNote) {
+        VCNoteStorage storage s = get();
+        cNote = s.cNote;
     }
 
     function setLendingLedger(address _lendingLedger) internal {
@@ -35,5 +48,25 @@ library VCNoteStorageLib {
         VCNoteStorage storage s = get();
         nonce = s.nonces[account];
         s.nonces[account]++;
+    }
+
+    function setBlacklist(address account, bool _isBlacklist) internal {
+        VCNoteStorage storage s = get();
+        s.blacklist[account] = _isBlacklist;
+    }
+
+    function isBlacklist(address account) internal view returns (bool _isBlacklist) {
+        VCNoteStorage storage s = get();
+        return s.blacklist[account];
+    }
+
+    function setVivaPoint(address _vivaPoint) internal {
+        VCNoteStorage storage s = get();
+        s.vivaPoint = _vivaPoint;
+    }
+
+    function getVivaPoint() internal view returns (address vivaPoint) {
+        VCNoteStorage storage s = get();
+        vivaPoint = s.vivaPoint;
     }
 }

@@ -31,7 +31,7 @@ abstract contract BaseJumpRateModelV2 is InterestRateModel {
     /**
      * @notice The base interest rate which is the y-intercept when utilization rate is 0
      */
-    uint public baseRatePerBlock;
+    uint public override baseRatePerBlock;
 
     /**
      * @notice The multiplierPerBlock after hitting a specified utilization point
@@ -95,7 +95,7 @@ abstract contract BaseJumpRateModelV2 is InterestRateModel {
      */
     function getBorrowRateInternal(uint cash, uint borrows, uint reserves) internal view returns (uint) {
         uint util = utilizationRate(cash, borrows, reserves);
-
+        
         if (util <= kink) {
             return ((util * multiplierPerBlock) / BASE) + baseRatePerBlock;
         } else {

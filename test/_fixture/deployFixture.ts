@@ -17,7 +17,7 @@ import {
 	WhitelistRouter,
 	VCNotePriceOracle,
 	MockTurnstile,
-	MockLendingLedger,
+	MockLendingLedgerV2,
 	MockOffchainFundPriceOracle,
 	MockSDYCPriceOracle,
 	OffchainFundPriceOracleRouter,
@@ -32,7 +32,8 @@ import {
 	LlamaPolicy,
 	VivacityManageScript,
 	VCNoteRouter,
-	OffchainFundWhitelistRouter
+	OffchainFundWhitelistRouter,
+	VivaPoint
 } from '../../typechain'
 import { LlamaAddress } from "../../scripts/types/deploy";
 
@@ -52,7 +53,7 @@ export interface Contracts {
 	vcNotePriceOracle: VCNotePriceOracle;
 	ofPriceOracleRouter: OffchainFundPriceOracleRouter;
 	sdycPriceOracleRouter: SDYCPriceOracleRouter;
-	lendingLedger: MockLendingLedger;
+	lendingLedger: MockLendingLedgerV2;
 	ofPriceOracle: MockOffchainFundPriceOracle;
 	sdycPriceOracle: MockSDYCPriceOracle;
 	ofWhitelist: MockOffchainFundWhitelist,
@@ -65,7 +66,9 @@ export interface Contracts {
 	vivaScript: VivacityManageScript;
 	stakerStrategy: string;
 	llama: LlamaAddress;
-	vcNoteRouter: VCNoteRouter;
+	vcNoteInterestModel: JumpRateModelV2;
+	vivaPoint: VivaPoint;
+	// vcNoteRouter: VCNoteRouter;
 }
 
 const deployFixture = async () => {
@@ -82,10 +85,11 @@ const deployFixture = async () => {
 	const VCNotePriceOracleFactory = await ethers.getContractFactory("VCNotePriceOracle");
 	const WhitelistRouterFactory = await ethers.getContractFactory("WhitelistRouter");
 	const VestingVaultFactory = await ethers.getContractFactory("VestingVault");
+	const VivaPointFacotry = await ethers.getContractFactory("VivaPoint");
 
 	const vcNoteDelegateFactory = await ethers.getContractFactory("VCNote");
 
-	const MockLendingLedgerFactory = await ethers.getContractFactory("MockLendingLedger");
+	const MockLendingLedgerFactory = await ethers.getContractFactory("MockLendingLedgerV2");
 	const MockOffchainFundPriceOracleFactory = await ethers.getContractFactory("MockOffchainFundPriceOracle");
 	const MockSDYCPriceOracleFactory = await ethers.getContractFactory("MockSDYCPriceOracle");
 	const MockOffchainFundWhitelistFactory = await ethers.getContractFactory("MockOffchainFundWhitelist");
@@ -97,18 +101,19 @@ const deployFixture = async () => {
 
 	const MockTurnstileFactory = await ethers.getContractFactory("MockTurnstile");
 
-	const VCNoteRouter = await ethers.getContractFactory("VCNoteRouter");
-
 	//////////////////////////////////////
 	//      DEPLOY Mock Comptroller     //
 	//////////////////////////////////////
 
-	const lendingLedger = await MockLendingLedgerFactory.deploy();
+	const lendingLedger = await MockLendingLedgerFactory.deploy(deployer.address);
 	const ofPriceOracle = await MockOffchainFundPriceOracleFactory.deploy(1e8);
 	const sdycPriceOracle = await MockSDYCPriceOracleFactory.deploy(1e8, 8);
 	const ofWhitelist = await MockOffchainFundWhitelistFactory.deploy();
 	const ofWhitelistRouter = await MockOffchainFundWhitelistRouterFactory.deploy();
 	const sdycWhitelist = await MockSDYCWhitelistFactory.deploy();
+
+	const blockNumber = await ethers.provider.getBlockNumber();
+	const vivaPoint = await VivaPointFacotry.deploy(deployer.address, blockNumber + 10);
 
 	// token
 	const note = await MockERC20Factory.deploy("NOTE", "NOTE");
@@ -123,8 +128,8 @@ const deployFixture = async () => {
 	// cToken
 	const cNoteInterestRateModel = await JumpRateModelV2Factory.deploy(
 		"0",
-		"1000000000000000000",
-		"4000000000000000000",
+		"100000000000000000000",
+		"400000000000000000000",
 		"700000000000000000",
 		deployer.address
 	);
@@ -240,13 +245,14 @@ const deployFixture = async () => {
 	const vivacityManageScriptFactory = await ethers.getContractFactory("VivacityManageScript");
 	const vivacityManageScript = await vivacityManageScriptFactory.deploy();
 
-	const llama = {
+	const llama: LlamaAddress = {
 		llamaCore: core.address,
 		llamaExecutor: executor.address,
 		llamaPolicy: policy.address,
 		llamaLens: llamaLens.address,
 		bootstrapStrategy: deployerStrategy,
-		coreTeamStrategy: stakingModuleStrategy,
+		coreTeamStrategy50: stakingModuleStrategy,
+		coreTeamStrategy100: stakingModuleStrategy,
 		stakingModuleStrategy: stakingModuleStrategy,
 		stakerStrategy: stakerStrategy,
 		llamaGovScript: llamaGovernanceScript.address,
@@ -291,7 +297,7 @@ const deployFixture = async () => {
 	/////////////////////////////////////////////////////////////
 
 	const priceOracleRouter = await PriceOracleRouterFactory.deploy();
-	const vcNotePriceOracle = await VCNotePriceOracleFactory.deploy(cNoteProxy.address);
+	const vcNotePriceOracle = await VCNotePriceOracleFactory.deploy(note.address);
 
 	const ofPriceOracleRouter = await OffchainFundPriceOracleRouterFactory.deploy();
 	const sdycPriceOracleRouter = await SDYCPriceOracleRouterFactory.deploy();
@@ -309,10 +315,10 @@ const deployFixture = async () => {
 	/////////////////////////////////////////////////////////////
 
 	const jumpRateModelV2 = await JumpRateModelV2Factory.deploy(
-		"0",                    // baseRatePerYear
-		"1000000000000000000",  // multiplierPerYear
-		"4000000000000000000",  // jumpMultiplierPerYear
-		"700000000000000000",   // kink_
+		"2500000000000000",		// baseRatePerYear
+		"2500000000000000",		// multiplierPerYear
+		"1225000000000000000",  // jumpMultiplierPerYear
+		"800000000000000000",	// kink_
 		deployer.address        // _owner
 	);
 
@@ -334,12 +340,12 @@ const deployFixture = async () => {
 
 	const vcNoteImpl = await vcNoteDelegateFactory.deploy();
 	const vcNoteProxy = await CErc20DelegatorFactory.deploy(
-		cNoteProxy.address,
+		note.address,
 		unitroller.address,
 		jumpRateModelV2.address,
 		ethers.utils.parseEther("1"),
-		`ccNote`,
-		`ccNote`,
+		`vcNote`,
+		`vcNote`,
 		18,
 		deployer.address,
 		vcNoteImpl.address,
@@ -419,15 +425,15 @@ const deployFixture = async () => {
 		[policy, "setRoleHolder", [STAKING_MODULE_ROLE, staking.address, 1, ethers.BigNumber.from(2).pow(64).sub(1)]],
 	]);
 
-
-
 	const cOF = await ethers.getContractAt("CRWAToken", ofProxy.address);
 	const cSDYC = await ethers.getContractAt("CRWAToken", sdycProxy.address);
 	const compt = await ethers.getContractAt("Comptroller", unitroller.address);
 	const vcn = await ethers.getContractAt("VCNote", vcNoteProxy.address);
 	const cn = await ethers.getContractAt("CErc20Delegate", cNoteProxy.address);
 
-	const vcnr = await VCNoteRouter.deploy(note.address, cn.address, vcn.address);
+	await vcn.reinitialize(note.address, cNoteProxy.address, "0x0000000000000000000000000000000000000000", vivaPoint.address);
+	await lendingLedger.whiteListLendingMarket(vcn.address, true);
+	await vivaPoint.setWhitelist(vcn.address, true);
 
 	return {
 		viva,
@@ -458,7 +464,8 @@ const deployFixture = async () => {
 		stakerStrategy,
 		llama,
 		ofWhitelistRouter,
-		vcNoteRouter: vcnr,
+		vcNoteInterestModel: jumpRateModelV2,
+		vivaPoint
 	}
 }
 

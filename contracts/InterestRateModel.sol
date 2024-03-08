@@ -9,6 +9,8 @@ abstract contract InterestRateModel {
     /// @notice Indicator that this is an InterestRateModel contract (for inspection)
     bool public constant isInterestRateModel = true;
 
+    function baseRatePerBlock() virtual external view returns (uint);
+
     /**
       * @notice Calculates the current borrow interest rate per block
       * @param cash The total amount of cash the market has
