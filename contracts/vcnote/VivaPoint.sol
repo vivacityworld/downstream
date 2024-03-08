@@ -48,38 +48,30 @@ contract VivaPoint is Ownable {
     }
 
     // Change the account's deposit amount and accumulate points.
-    function update(address _account, uint256 _amount) external onlyWhitelisted(msg.sender) {
+    function update(address _account, uint256 _newAmount) external onlyWhitelisted(msg.sender) {
         UserInfo storage userInfo = userInfos[_account];
 
         // if startBlock is not reached yet, just update the amount
         if (startBlock >= block.number) {
             userInfo.lastUpdatedBlock = startBlock;
-            userInfo.amount = _amount;
+            userInfo.amount = _newAmount;
 
-            emit Update(_account, _amount);
+            emit Update(_account, _newAmount);
             return;
         }
 
         uint256 lastBlock = (endBlock < block.number ? endBlock : block.number);
-
-        // if first update, just update the amount
-        if (userInfo.lastUpdatedBlock == 0) {
-            userInfo.lastUpdatedBlock = lastBlock;
-            userInfo.amount = _amount;
-
-            emit Update(_account, _amount);
-            return;
-        } 
-        
         uint256 blockDelta = lastBlock - userInfo.lastUpdatedBlock;
         if (blockDelta == 0)  return;
         
         // accumulate points
         userInfo.accumulatedAmount += userInfo.amount * blockDelta;
-        userInfo.amount = _amount;
+
+        // update new amount and lastUpdatedBlock
+        userInfo.amount = _newAmount;
         userInfo.lastUpdatedBlock = lastBlock;
 
-        emit Update(_account, _amount);
+        emit Update(_account, _newAmount);
         return;
     }
 
