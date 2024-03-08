@@ -268,7 +268,8 @@ contract VCNote is CErc20Delegate_VCNote {
         uint currentLiquidity = getStoredBalanceOfUnderlying(target);
 
         if (lastLiquidity == currentLiquidity) return;
-        int liquidityDelta = (currentLiquidity > lastLiquidity) ? int(currentLiquidity - lastLiquidity) : -int(lastLiquidity - currentLiquidity);
+        int liquidityDelta = int(currentLiquidity) - int(lastLiquidity);
+
         ILendingLedgerV2(lendingLedger).sync_ledger(target, liquidityDelta);
         IVivaPoint(VCNoteStorageLib.getVivaPoint()).update(target, currentLiquidity);
         
