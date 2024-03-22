@@ -9,17 +9,19 @@ async function main({ deployed }: { deployed: DeployLocal }) {
   //////////////////////////////////////////
   //       DEPLOY UPGRADE CONTRACT        //
   //////////////////////////////////////////
+  // console.log("signer.getTransactionCount()", await signer.getTransactionCount());
 
-  // const vcNoteImpl = await deploy("VCNote", []);
-  // const vcNotePriceOracle = await deploy("VCNotePriceOracle", [deployed.NOTE]);
-  const vivaPoint = await deploy("VivaPoint", [deployed.llama?.llamaExecutor!, 6704940]);
+  const vcNoteImpl = await deploy("VCNote", []);
+  const vcNotePriceOracle = await deploy("VCNotePriceOracle", [deployed.NOTE]);
+  // block 8792114,  Thu, 21 Mar 2024 00:00:00 GMT
+  const vivaPoint = await deploy("VivaPoint", [deployed.llama?.llamaExecutor!, 8792114]);
 
   return {
-    // vcNote_impl: vcNoteImpl.address,
+    vcNote_impl: vcNoteImpl.address,
     vivaPoint: vivaPoint.address,
     oracle: {
       ...deployed.oracle,
-      // vcNotePriceOracle: vcNotePriceOracle.address,
+      vcNotePriceOracle: vcNotePriceOracle.address,
     }
   }
 }
