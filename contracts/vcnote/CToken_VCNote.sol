@@ -212,7 +212,7 @@ abstract contract CToken_VCNote is CTokenInterface, ExponentialNoError, TokenErr
      * @notice Returns the current per-block supply interest rate for this cToken
      * @return The supply interest rate per block, scaled by 1e18
      */
-    function supplyRatePerBlock() override external view returns (uint) {
+    function supplyRatePerBlock() override virtual external view returns (uint) {
         return interestRateModel.getSupplyRate(getCashPrior(), totalBorrows, totalReserves, reserveFactorMantissa);
     }
 
@@ -333,7 +333,7 @@ abstract contract CToken_VCNote is CTokenInterface, ExponentialNoError, TokenErr
         if (accrualBlockNumberPrior == currentBlockNumber) {
             return NO_ERROR;
         }
-
+        
         /* Read the previous values out of storage */
         uint cashPrior = getCashPrior();
         uint borrowsPrior = totalBorrows;
@@ -359,8 +359,20 @@ abstract contract CToken_VCNote is CTokenInterface, ExponentialNoError, TokenErr
         Exp memory simpleInterestFactor = mul_(Exp({mantissa: borrowRateMantissa}), blockDelta);
         uint interestAccumulated = mul_ScalarTruncate(simpleInterestFactor, borrowsPrior);
         uint totalBorrowsNew = interestAccumulated + borrowsPrior;
-        uint totalReservesNew = mul_ScalarTruncateAddUInt(Exp({mantissa: reserveFactorMantissa}), interestAccumulated, reservesPrior);
         uint borrowIndexNew = mul_ScalarTruncateAddUInt(simpleInterestFactor, borrowIndexPrior, borrowIndexPrior);
+        uint totalReservesNew;
+        
+        {
+            uint baseInterestAccumulated;
+            {
+                uint baseRate = interestRateModel.baseRatePerBlock();
+                Exp memory baseInterestFactor = mul_(Exp({mantissa: baseRate}), blockDelta);
+                baseInterestAccumulated = mul_ScalarTruncate(baseInterestFactor, borrowsPrior);
+            }
+            uint interestAccumulatedWithoutBase = interestAccumulated - baseInterestAccumulated;
+
+            totalReservesNew = mul_ScalarTruncateAddUInt(Exp({mantissa: reserveFactorMantissa}), interestAccumulatedWithoutBase, reservesPrior) + baseInterestAccumulated;
+        }
 
         /////////////////////////
         // EFFECTS & INTERACTIONS

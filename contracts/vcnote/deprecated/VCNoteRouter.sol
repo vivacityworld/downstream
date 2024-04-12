@@ -3,11 +3,11 @@ pragma solidity ^0.8.20;
 
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {BorrowPermitParams} from "./libraries/BorrowPermitParams.sol";
-import {IVCNote} from "./interfaces/IVCNote.sol";
-import {ICERC20} from "./interfaces/ICERC20.sol";
+import {BorrowPermitParams} from "../libraries/BorrowPermitParams.sol";
+import {IVCNote} from "../interfaces/IVCNote.sol";
+import {ICERC20} from "../interfaces/ICERC20.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-import {ITurnstile} from "../_interfaces/ITurnstile.sol";
+import {ITurnstile} from "../../_interfaces/ITurnstile.sol";
 
 /**
  * @title VCNote Router
