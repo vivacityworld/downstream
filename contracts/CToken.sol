@@ -8,6 +8,11 @@ import "./EIP20Interface.sol";
 import "./InterestRateModel.sol";
 import "./ExponentialNoError.sol";
 
+import {ITurnstile} from "./_interfaces/ITurnstile.sol";
+
+import {RedstoneOracle} from "./RedstoneOracle.sol";
+import {Address} from "@openzeppelin/contracts/utils/Address.sol";
+
 /**
  * @title Compound's CToken Contract
  * @notice Abstract base for CTokens
@@ -54,6 +59,27 @@ abstract contract CToken is CTokenInterface, ExponentialNoError, TokenErrorRepor
 
         // The counter starts true to prevent changing it from zero to non-zero (i.e. smaller cost/refund)
         _notEntered = true;
+    }
+
+    function executeWithPrice(
+        bytes calldata _executeData,
+        address _redstoneOracle,
+        bytes32[] memory _redstoneIds,
+        bytes calldata _redstoneData
+    ) public returns (bytes memory) {
+        RedstoneOracle(_redstoneOracle).setPrice(_redstoneIds, _redstoneData);
+        return Address.functionDelegateCall(address(this), _executeData);
+    }
+
+    /**
+    * @notice  Assign for CSR
+    * @param   turnstile  Address of turnstile contract
+    * @param   tokenId    tokenId which will collect fees
+    */
+    function assignForCSR(address turnstile, uint256 tokenId) external {
+
+        require(msg.sender == admin, "only admin may assign CSR");
+        ITurnstile(turnstile).assign(tokenId);
     }
 
     /**

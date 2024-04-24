@@ -8,6 +8,9 @@ import "../EIP20Interface.sol";
 import "../InterestRateModel.sol";
 import "../ExponentialNoError.sol";
 
+import {RedstoneOracle} from "../RedstoneOracle.sol";
+import {Address} from "@openzeppelin/contracts/utils/Address.sol";
+
 /**
  * @title Compound's CToken Contract
  * @notice Abstract base for CTokens
@@ -54,6 +57,16 @@ abstract contract CToken_VCNote is CTokenInterface, ExponentialNoError, TokenErr
 
         // The counter starts true to prevent changing it from zero to non-zero (i.e. smaller cost/refund)
         _notEntered = true;
+    }
+
+    function executeWithPrice(
+        bytes calldata _executeData,
+        address _redstoneOracle,
+        bytes32[] memory _redstoneIds,
+        bytes calldata _redstoneData
+    ) public returns (bytes memory) {
+        RedstoneOracle(_redstoneOracle).setPrice(_redstoneIds, _redstoneData);
+        return Address.functionDelegateCall(address(this), _executeData);
     }
 
     /**
