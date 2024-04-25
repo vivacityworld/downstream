@@ -33,7 +33,8 @@ import {
 	VivacityManageScript,
 	VCNoteRouter,
 	OffchainFundWhitelistRouter,
-	VivaPoint
+	VivaPoint,
+	RedstoneOracle
 } from '../../typechain'
 import { LlamaAddress } from "../../scripts/types/deploy";
 
@@ -42,11 +43,17 @@ export interface Contracts {
 	of: MockERC20;
 	sdyc: MockERC20;
 	note: MockERC20;
+	atom: MockERC20;
+	wcanto: MockERC20;
+	eth: MockERC20;
 	cOF: CRWAToken;
 	cSDYC: CRWAToken;
 	comptroller: Comptroller;
 	cNote: CErc20Delegate
 	vcNote: VCNote;
+	cATOM: CErc20Delegate;
+	cETH: CErc20Delegate;
+	cCANTO: CErc20Delegate;
 	vestingVault: VestingVault;
 	priceOracleRouter: PriceOracleRouter;
 	whitelistRouter: WhitelistRouter;
@@ -68,6 +75,7 @@ export interface Contracts {
 	llama: LlamaAddress;
 	vcNoteInterestModel: JumpRateModelV2;
 	vivaPoint: VivaPoint;
+	redstoneOracle: RedstoneOracle;
 	// vcNoteRouter: VCNoteRouter;
 }
 
@@ -101,6 +109,8 @@ const deployFixture = async () => {
 
 	const MockTurnstileFactory = await ethers.getContractFactory("MockTurnstile");
 
+	const RedstoneOracleFactory = await ethers.getContractFactory("RedstoneOracle");
+
 	//////////////////////////////////////
 	//      DEPLOY Mock Comptroller     //
 	//////////////////////////////////////
@@ -117,6 +127,9 @@ const deployFixture = async () => {
 
 	// token
 	const note = await MockERC20Factory.deploy("NOTE", "NOTE");
+	const atom = await MockERC20Factory.deploy("ATOM", "ATOM");
+	const eth = await MockERC20Factory.deploy("ETH", "ETH");
+	const wcanto = await MockERC20Factory.deploy("WCANTO", "WCANTO");
 
 	// comptroller
 	const clmComptroller = await ComptrollerFactory.deploy();
@@ -302,6 +315,8 @@ const deployFixture = async () => {
 	const ofPriceOracleRouter = await OffchainFundPriceOracleRouterFactory.deploy();
 	const sdycPriceOracleRouter = await SDYCPriceOracleRouterFactory.deploy();
 
+	const redstoneOracle = await RedstoneOracleFactory.deploy();
+
 	/////////////////////////////////////////////////////////////
 	/////////////////// WhitelistRuter				  ///////////
 	/////////////////////////////////////////////////////////////
@@ -388,6 +403,51 @@ const deployFixture = async () => {
 		[]
 	);
 
+	// crypto assets
+	const atomImpl = await CErc20DelegateFactory.deploy();
+	const ethImpl = await CErc20DelegateFactory.deploy();
+	const wcantoImpl = await CErc20DelegateFactory.deploy();
+
+	const atomProxy = await CErc20DelegatorFactory.deploy(
+		atom.address,
+		unitroller.address,
+		jumpRateModelV2.address,
+		ethers.utils.parseEther("1"),
+		"cATOM",
+		"cATOM",
+		6,
+		deployer.address,
+		atomImpl.address,
+		[]
+	);
+
+	const ethProxy = await CErc20DelegatorFactory.deploy(
+		eth.address,
+		unitroller.address,
+		jumpRateModelV2.address,
+		ethers.utils.parseEther("1"),
+		"cETH",
+		"cETH",
+		6,
+		deployer.address,
+		ethImpl.address,
+		[]
+	);
+
+	const wcantoProxy = await CErc20DelegatorFactory.deploy(
+		wcanto.address,
+		unitroller.address,
+		jumpRateModelV2.address,
+		ethers.utils.parseEther("1"),
+		"cCANTO",
+		"cCANTO",
+		6,
+		deployer.address,
+		wcantoImpl.address,
+		[]
+	);
+
+
 	/////////////////////////////////////////////////////////////
 	/////////////////// SETUP LLAMA           ///////////////////
 	/////////////////////////////////////////////////////////////
@@ -431,6 +491,10 @@ const deployFixture = async () => {
 	const vcn = await ethers.getContractAt("VCNote", vcNoteProxy.address);
 	const cn = await ethers.getContractAt("CErc20Delegate", cNoteProxy.address);
 
+	const cATOM = await ethers.getContractAt("CErc20Delegate", atomProxy.address);
+	const cETH = await ethers.getContractAt("CErc20Delegate", ethProxy.address);
+	const cCANTO = await ethers.getContractAt("CErc20Delegate", wcantoProxy.address);
+
 	await vcn.reinitialize(note.address, cNoteProxy.address, "0x0000000000000000000000000000000000000000", vivaPoint.address);
 	await lendingLedger.whiteListLendingMarket(vcn.address, true);
 	await vivaPoint.setWhitelist(vcn.address, true);
@@ -440,8 +504,14 @@ const deployFixture = async () => {
 		of,
 		sdyc,
 		note,
+		atom,
+		eth,
+		wcanto,
 		cOF,
 		cSDYC,
+		cATOM,
+		cETH,
+		cCANTO,
 		comptroller: compt,
 		vcNote: vcn,
 		cNote: cn,
@@ -454,6 +524,7 @@ const deployFixture = async () => {
 		lendingLedger,
 		ofPriceOracle,
 		sdycPriceOracle,
+		redstoneOracle,
 		ofWhitelist,
 		sdycWhitelist,
 		turnstile,
