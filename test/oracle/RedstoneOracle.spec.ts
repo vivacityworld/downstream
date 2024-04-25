@@ -16,8 +16,6 @@ describe("RedstoneOracle", function () {
   let contracts: Contracts;
   let signer: SignerWithAddress;
   let users: SignerWithAddress[];
-  let vcNote: VCNote;
-  let cNote: CErc20Delegate;
   let redstoneOracle: RedstoneOracle;
 
   let dataFeeds = ["ETH", "ATOM", "CANTO"];
@@ -28,10 +26,7 @@ describe("RedstoneOracle", function () {
     [signer, ...users] = await ethers.getSigners();
     contracts = await loadFixture(deployFixture);
     redstoneOracle = contracts.redstoneOracle;
-    vcNote = contracts.vcNote;
-    cNote = contracts.cNote;
     dataAddresses = [contracts.atom.address, contracts.eth.address, contracts.wcanto.address];
-
   })
 
   it("[error] setFreshTime OwnableUnauthorizedAccount", async function () {
@@ -198,31 +193,9 @@ describe("RedstoneOracle", function () {
 
 
   it("[error] getPrice PriceIsNotFresh", async function () {
-
     const freshTime = await redstoneOracle.freshTime();
     await time.increase(freshTime.add(10));
 
     await expect(redstoneOracle.getPrice(contracts.atom.address)).revertedWith("PriceIsNotFresh");
   });
-
-
-
-
-  // it("[error] getUnderlyingPrice", async function () {
-  //   // await redstoneOracle.getUnderlyingPrice(contracts.cOF.address);
-  //   // ========== action & validation =========
-  //   await expect(redstoneOracle.getUnderlyingPrice(contracts.cOF.address))
-  //     .revertedWith("PriceIsNotSet");
-  // });
-
-  // it("getUnderlyingPrice", async function () {
-
-
-
-  //   // ================ action ================
-  //   const price = await redstoneOracle.getUnderlyingPrice(vcNote.address);
-
-  //   // ============== validation ==============
-  //   expect(price).eq(ethers.utils.parseEther("1"));
-  // });
 });
