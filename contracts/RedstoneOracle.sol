@@ -34,6 +34,7 @@ contract RedstoneOracle is PriceOracle, PrimaryProdDataServiceConsumerBase, Owna
   error PriceIsNotFresh(uint256 blockTimestamp, uint256 priceTimestamp);
   error PriceIsExpired(uint256 lastTimestamp, uint256 priceTimestamp);
   error PriceIsNotSet();
+  error AssetIsNotSet();
 
   constructor() Ownable(msg.sender) {}
 
@@ -77,6 +78,7 @@ contract RedstoneOracle is PriceOracle, PrimaryProdDataServiceConsumerBase, Owna
       Asset storage asset = assets[ids[i]];
       Price storage price = prices[asset.addr];
 
+      if (asset.addr == address(0) || asset.decimals == 0) revert AssetIsNotSet();
       if (createdAt < price.timestamp) revert PriceIsExpired(price.timestamp, createdAt);
       uint256 extractPrice = values[i] * 1e28 / 10 ** asset.decimals;
       price.price = extractPrice;
@@ -106,7 +108,7 @@ contract RedstoneOracle is PriceOracle, PrimaryProdDataServiceConsumerBase, Owna
     return getPrice(CErc20(address(cToken)).underlying());
   }
 
-
+  
 
   /**
   * @notice  getUniqueSignersThreshold is a view function that returns the minimum required value of unique authorised signers
