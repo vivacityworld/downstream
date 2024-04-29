@@ -234,9 +234,8 @@ contract VCNote is CErc20Delegate_VCNote {
     }
 
     function supplyRatePerBlock() override external view returns (uint) {
-        if (totalBorrows == 0) {
-            return 0;
-        }
+        if (totalSupply == 0) return 0;
+        if (totalBorrows == 0) return CErc20(VCNoteStorageLib.getCNote()).supplyRatePerBlock();
 
         // Utilization rate is defined as outstanding borrows over the sum of cash and borrows
         uint util = totalBorrows * 1e18 / (getCashPrior() + totalBorrows - totalReserves);
