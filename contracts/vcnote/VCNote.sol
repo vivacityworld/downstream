@@ -1,14 +1,18 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.20;
 
+import "hardhat/console.sol";
 import {VCNoteStorage, VCNoteStorageLib} from "./storages/VCNoteStorage.sol";
 import {BorrowPermitParams} from "./libraries/BorrowPermitParams.sol";
+import {RedeemPermitParams} from "./libraries/RedeemPermitParams.sol";
 
 import {CErc20} from "../CErc20.sol";
 import {CErc20Delegate_VCNote} from "./CErc20Delegate_VCNote.sol";
 import {ILendingLedgerV2} from "./interfaces/ILendingLedgerV2.sol";
 import {ITurnstile} from "../_interfaces/ITurnstile.sol";
 import {IVivaPoint} from "./interfaces/IVivaPoint.sol";
+import {IVivacityBorrower} from "./interfaces/IVivacityBorrower.sol";
+import {IVivacityRedeemer} from "./interfaces/IVivacityRedeemer.sol";
 
 /**
  * @title VCNote Contracts
@@ -104,11 +108,11 @@ contract VCNote is CErc20Delegate_VCNote {
 
     function borrowFresh(address payable borrower, uint borrowAmount, address payable receiver) internal {
         /* Fail if borrow not allowed */
-        uint allowed = comptroller.borrowAllowed(address(this), borrower, borrowAmount);
-        if (allowed != 0) {
-            revert BorrowComptrollerRejection(allowed);
-        }
-
+        // uint allowed = comptroller.borrowAllowed(address(this), borrower, borrowAmount);
+        // if (allowed != 0) {
+        //     revert BorrowComptrollerRejection(allowed);
+        // }
+        
         /* Verify market's block number equals current block number */
         if (accrualBlockNumber != getBlockNumber()) {
             revert BorrowFreshnessCheck();
@@ -148,8 +152,110 @@ contract VCNote is CErc20Delegate_VCNote {
          */
         doTransferOut(receiver, borrowAmount);
 
+        IVivacityBorrower(receiver).borrowCallback(borrower, borrowAmount);
+
+        /* Fail if borrow not allowed */
+        uint allowed = comptroller.borrowAllowed(address(this), borrower, borrowAmount);
+        if (allowed != 0) {
+            revert BorrowComptrollerRejection(allowed);
+        }
+
         /* We emit a Borrow event */
         emit Borrow(borrower, borrowAmount, accountBorrowsNew, totalBorrowsNew);
+    }
+
+    /**
+     * @notice borrow function by permit
+     * @param params The params of borrow permit
+     */
+     function redeemPermit(RedeemPermitParams memory params) external returns (uint) {
+        redeemPermitInternal(params);
+        return NO_ERROR;
+    }
+
+    function redeemPermitInternal(RedeemPermitParams memory params) internal nonReentrant {
+        params.validate();
+        accrueInterest();
+        // borrowFresh emits borrow-specific logs on errors, so we don't need to
+        redeemFresh(params.redeemer, params.redeemAmount, 0, params.executor);
+    }
+
+    function redeemFresh(address payable redeemer, uint redeemTokensIn, uint redeemAmountIn, address payable receiver) internal {
+        require(redeemTokensIn == 0 || redeemAmountIn == 0, "one of redeemTokensIn or redeemAmountIn must be zero");
+
+        /* exchangeRate = invoke Exchange Rate Stored() */
+        Exp memory exchangeRate = Exp({mantissa: exchangeRateStoredInternal() });
+
+        uint redeemTokens;
+        uint redeemAmount;
+        /* If redeemTokensIn > 0: */
+        if (redeemTokensIn > 0) {
+            /*
+             * We calculate the exchange rate and the amount of underlying to be redeemed:
+             *  redeemTokens = redeemTokensIn
+             *  redeemAmount = redeemTokensIn x exchangeRateCurrent
+             */
+            redeemTokens = redeemTokensIn;
+            redeemAmount = mul_ScalarTruncate(exchangeRate, redeemTokensIn);
+        } else {
+            /*
+             * We get the current exchange rate and calculate the amount to be redeemed:
+             *  redeemTokens = redeemAmountIn / exchangeRate
+             *  redeemAmount = redeemAmountIn
+             */
+            redeemTokens = div_(redeemAmountIn, exchangeRate);
+            redeemAmount = redeemAmountIn;
+        }
+
+        /* Fail if redeem not allowed */
+        // uint allowed = comptroller.redeemAllowed(address(this), redeemer, redeemTokens);
+        // if (allowed != 0) {
+        //     revert RedeemComptrollerRejection(allowed);
+        // }
+
+        /* Verify market's block number equals current block number */
+        if (accrualBlockNumber != getBlockNumber()) {
+            revert RedeemFreshnessCheck();
+        }
+
+        /* Fail gracefully if protocol has insufficient cash */
+        if (getCashPrior() < redeemAmount) {
+            revert RedeemTransferOutNotPossible();
+        }
+
+        /////////////////////////
+        // EFFECTS & INTERACTIONS
+        // (No safe failures beyond this point)
+
+
+        /*
+         * We write the previously calculated values into storage.
+         *  Note: Avoid token reentrancy attacks by writing reduced supply before external transfer.
+         */
+        totalSupply = totalSupply - redeemTokens;
+        accountTokens[redeemer] = accountTokens[redeemer] - redeemTokens;
+
+        /*
+         * We invoke doTransferOut for the redeemer and the redeemAmount.
+         *  Note: The cToken must handle variations between ERC-20 and ETH underlying.
+         *  On success, the cToken has redeemAmount less of cash.
+         *  doTransferOut reverts if anything goes wrong, since we can't be sure if side effects occurred.
+         */
+        doTransferOut(receiver, redeemAmount);
+
+        IVivacityRedeemer(msg.sender).redeemCallback(redeemer, redeemAmount);
+
+        uint allowed = comptroller.redeemAllowed(address(this), redeemer, redeemTokens);
+        if (allowed != 0) {
+            revert RedeemComptrollerRejection(allowed);
+        }
+
+        /* We emit a Transfer event, and a Redeem event */
+        emit Transfer(redeemer, address(this), redeemTokens);
+        emit Redeem(redeemer, redeemAmount, redeemTokens);
+
+        /* We call the defense hook */
+        comptroller.redeemVerify(address(this), redeemer, redeemAmount, redeemTokens);
     }
 
     /**
@@ -165,7 +271,7 @@ contract VCNote is CErc20Delegate_VCNote {
         params.validate();
         accrueInterest();
         // borrowFresh emits borrow-specific logs on errors, so we don't need to
-        borrowFresh(params.borrower, params.borrowCNote, params.executor);
+        borrowFresh(params.borrower, params.borrowNote, params.executor);
     }
 
     // ==============================
@@ -234,8 +340,9 @@ contract VCNote is CErc20Delegate_VCNote {
     }
 
     function supplyRatePerBlock() override external view returns (uint) {
-        if (totalSupply == 0) return 0;
-        if (totalBorrows == 0) return CErc20(VCNoteStorageLib.getCNote()).supplyRatePerBlock();
+        if (totalBorrows == 0) {
+            return 0;
+        }
 
         // Utilization rate is defined as outstanding borrows over the sum of cash and borrows
         uint util = totalBorrows * 1e18 / (getCashPrior() + totalBorrows - totalReserves);
