@@ -1,80 +1,44 @@
-# Vivacity Audit
+## **What we want to build**
 
-## Scope
+We are building a power station to bolster liquidity for users journeying through the Canto ecosystem and constructing a hub to enhance connectivity with dApps.
 
-Total SLoC: 246
+- Lending + : the Liquidity Power Station of Canto
+    - Strengthening capital efficiency
+        - Vivacity expanded from a unique lending market for RWAs to a general lending market, adding Crypto as collateral.
+        - Enhancing capital efficiency by allowing Multi-assets as collateral
+        - Real World Assets (RWAs), Crypto and major DeFi LP tokens within the Canto ecosystem as collateral
+    - Full-featured platform for users to leverage the full potential of DeFi
+        - Supporting convenient and low-cost leverage building.
+        - Providing investors with a choice of different risk-appetites through leverage yield farming.
+- My Smart Canto Wallet: The Terminal of the Canto Ecosystem
+    - Fostering an interconnected Canto ecosystem
+        - Seamlessly integrating UX distributed and isolated dApps within the Canto ecosystem.
+        - Can monitor and manage my position in Canto's major dApps through Vivacity.
 
-| Contract                             | SLOC | Purpose                                                                                                                                            |
-| ------------------------------------ | ---- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| CCNote.sol                           | 42   | CCNote is a contract that enables cNote to be used as borrowing asset in the Vivacity, details in [ccnote/CCNote.md](./contracts/ccnote/CCNote.md) |
-| ccnote/oracle/CCNotepPriceOracle.sol | 16   | Convert cNote price to Note price, Note price is fixed as $1                                                                                       |
-| PriceOracleRouter.sol                | 11   | Integrate multiple oracle interfafces                                                                                                              |
-| RWA/whitelist/\*                     | 13   | Integrate multiple whitelist interfafces                                                                                                           |
-| gov/staking/\*                       | 113  | Lock contract for converting viva token to voting power                                                                                            |
-| vesting/VestingVault.sol             | 55   | Token vesting for involved vivacity partners                                                                                                       |
+## **Lending+**
 
-## Overview
-Vivacity is a Compound V2 based lending protocol that enables users to borrow cNOTE against RWA assets. Generally, Vivacity will have two types of users: **1. users seeking leverage on RWA assets** and **2. users who want to lend their cNOTE** to earn yield.
+**Add LP tokens as collateral**
 
-User 1 will primarily supply RWA assets (represented by ERC20s) to Vivacity and borrow `cNOTE`. User 2 will supply their `cNOTE` to Vivacity so it can be borrowed by user 1. 
+- Users provide liquidity to the Pools on the Canto Lending Market (CLM) and earn rewards.
+- However, it does not stop there, and through Vivacity, DeFi LP tokens can be used as collateral to improve capital efficiency.
+- DeFi LP tokens(CLM & Cadence) can be used as collateral to borrow NOTE.
 
-When `cNOTE` is supplied to Vivacity, users will receive `vcNOTE` (viva-cNOTE). When RWA tokens are supplied to Vivacity, users will receive `cRWATokens`.
+**One-Click Leveraged Building**
 
-#### IMPORTANT:
-- `cNOTE` will have a collateral factor of 0. This means `cNOTE` cannot be used as collateral and users who supply it **cannot borrow against it**
-- RWA tokens will have a borrow cap of 1. This means that RWA tokens **cannot be borrowed** by anyone. It can only be supplied and used as collateral.
+- Utilizing flash loan, provide one-click leverage building feature.
+- Enhancing the user experience of leveraged transactions by simplifying the complexity and costs associated with the traditional leveraged lending process.
 
+**One-Click Leveraged Farming**
 
-## vcNOTE (viva-cNOTE)
-`vcNOTE` is the [cToken](https://docs.compound.finance/v2/ctokens/) that users receive for supplying [cNOTE](https://docs.canto.io/overview/note#usdcnote). `vcNOTE` is a CErc20Delegate with added functionality to integrate with Canto's Neofinance Coordinator. 
+- Provide optimized and automated process for users engaged in yield farming on CLM.
+- Allow users to leverage up their yield farming position by borrowing liquidity from Vivacity.
+- Users can open leveraged positions, add more liquidity, and harvest their positions.
 
-`vcNOTE` overrides all cToken functions that lead to a balance change so that the Neofinance Coordinator can track user positions. The overriden functions are:
-- `mintInternal()`
-- `redeemInternal()`
-- `redeemUnderlyingInternal()`
-- `seizeInternal()`
-- `transferTokens()`
+## **My Smart Canto Wallet**
 
-Contracts that `vcNOTE` inherit have been modified so that the functions listed above can be overrided. 
-
-#### cNOTE Oracle
-The `cNOTE` oracle is used to determine the price of `cNOTE`. Because `cNOTE` is a repricing token based on the interest rate of supplying/borrowing NOTE in the Canto Lending Market, the price of `cNOTE` will naturally go up over time. `NOTE` is pegged to 1 dollar at all times in the Canto Lending Market. Hence, to get the USD price of `cNOTE`, the oracle looks at the exchange rate between `cNOTE` <=> `NOTE`. 
-
-## cRWAToken
-`cRWAToken` is the cToken that users receive for supplying RWA tokens. There can be multiple different types of RWA tokens supplied to Vivacity. Each one will produce a different `cRWAToken`. 
-
-For example, let's say there are 2 RWA tokens available to collateralize in Vivacity: TBill and SME
-
-When a user supplies and collateralizes TBill token, they will receive cTBill (which would be a token of type `cRWAToken`). If the user supplies SME token, they would receive cSME (again, a `cRWAToken`).
-
-#### Whitelists
-
-`cRWAToken` are different from regular cTokens in that they cannot be transfered and only whitelisted users are able to own them. Whitelists come from the RWA token issuers themselves. When a user KYCs with the RWA issuer, they will be added to the whitelist which allows them to own the RWA token. 
-
-Vivacity looks at this whitelist to determine who can own the `cRWAToken`. This means that only other whitelisted users are able to own and liquidate `cRWATokens`. As mentioned previously, the transfer function for `cRWATokens` has been disabled.  
-
-#### Oracles
-The Vivacity comptroller must know the price of the RWA tokens in order to calculate an account's standing. Each RWA issuer will publish prices of RWA Tokens to an oracle contract on chain. 
-
-The comptroller looks at `PriceOracleRouter.sol` to get the price of each cRWAToken. `PriceOracleRouter` will route each cRWAToken to the correct price oracle. It is expected that the price oracle for each cRWAToken will be provided and managed by the RWA issuers themselves.
-
-## Staking
-
-Staking plays a role in depositing tokens and receiving voting power from Llama governance. https://docs.llama.xyz/
-
-Llama is an onchain governance and access control framework. It defines roles and permissions for executing transactions(called actions). This document describes how action is progressed and state changes depending on the result for every step. Actions are proposed, executable transactions that can be initiated by policyholders.
-https://docs.llama.xyz/framework/actions#action-state
-
-Proposer is requested to lock the amount of token decided by admin(setDeposit).  Withdrawal process is not triggered, restricted by Llama’s interface. Therefore, the proposer should handle the withdrawal process manually. The withdrawal outcome is determined by the state of progress(repo llama/src/lib/Enums.sol). If executed successfully, the amount deposited will be returned. But if canceled, failed and expired, it will be reserved in contract.
-
-## Vesting
-
-Vesting distributes a certain amount of token supply based on schedule. Contract has a structure for storing wheezing schedules(struct Vesting). Vivacity uses a linear vesting schedule that releases the vested tokens in a linear amount and time. 
-
-Owner can decide related vesting parameter through
-add()
-remove()
-transfer()
-
-Vested account can withdraw through
-release()
+- Users can manage and monitor various dApps within the Canto ecosystem.
+- It serves as a terminal connecting different parts of the Canto ecosystem, integrating them into one place.
+- Using My Canto Smart Wallet:
+    - Users can check the value of my assets supplied and borrowed in CLM, as well as the liquidity value provided to the pools.
+    - Users can monitor my positions in Cadence.
+    - Users can check my earnings in 1155.TECH.
