@@ -36,7 +36,10 @@
     "@nomicfoundation/hardhat-network-helpers": "^1.0.9",
     "@openzeppelin/contracts": "^5.0.0",
     "@openzeppelin/contracts-upgradeable": "^5.0.0",
+    "@redstone-finance/evm-connector": "^0.3.6",
+    "@wagmi/core": "^2.6.15",
     "solady": "^0.0.123",
-    "solmate": "^6.2.0"
+    "solmate": "^6.2.0",
+    "viem": "^2.9.8"
   }
 }
