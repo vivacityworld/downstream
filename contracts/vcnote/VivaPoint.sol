@@ -18,11 +18,11 @@ contract VivaPoint is Ownable {
     event SetSupplyPointRatePerTime(uint256 _rate);
     event SetBorrowPointRatePerTime(uint256 _rate);
     event SetReferrerIncentiveRate(uint256 _referrerIncentiveRate);
-    event SetReferreeIncentiveRate(uint256 _referreeIncentiveRate);
+    event SetRefereeIncentiveRate(uint256 _refereeIncentiveRate);
     event SetVCNote(address _vcNote);
     event SetEndTime(uint256 _endTime);
-    event SetReferral(address _referrer, address _referree);
-    event UpdatePoint(address _account, uint256 _addedPoint, address _referrer, uint256 _addedReferrerPoint, uint256 _addedReferreePoint);
+    event SetReferral(address _referrer, address _referee);
+    event UpdatePoint(address _account, uint256 _addedPoint, address _referrer, uint256 _addedReferrerPoint, uint256 _addedRefereePoint);
     event MigrateV1Point(address _account, uint256 _point);
     event MigrateV2Point(address _account, uint256 _point);
 
@@ -39,16 +39,16 @@ contract VivaPoint is Ownable {
         uint256 lastUpdatedTime;
     }
 
-    // Mapping to store referrer and referrees relationships
+    // Mapping to store referrer and referees relationships
     mapping(address => address) public referrer;
-    mapping(address => address[]) public referrees;
+    mapping(address => address[]) public referees;
     mapping(address => User) public users;
     
     // Configuration variables
     uint256 public supplyPointRatePerTime = uint256(31709791984); // 1e18 / 365 / 24 / 3600;
     uint256 public borrowPointRatePerTime = uint256(63419583968); // 2e18 / 365 / 24 / 3600;
     uint256 public referrerIncentiveRate = 0.1e18;
-    uint256 public referreeIncentiveRate = 0.1e18;
+    uint256 public refereeIncentiveRate = 0.1e18;
     ICERC20 public vcNOTE;
     // Whitelisted addresses that can set referrals
     mapping(address => bool) public isWhitelisted;
@@ -58,7 +58,7 @@ contract VivaPoint is Ownable {
     // The number of the block to end accumulating points
     uint256 public endTime;
 
-    constructor(address initialOwner, uint256 _startTime, address _vcNote) Ownable(initialOwner) {
+    constructor(address _initialOwner, uint256 _startTime, address _vcNote) Ownable(_initialOwner) {
         require(_startTime > block.timestamp, "VivaPoint: cannot change start time after it has started");
         startTime = _startTime;
         endTime = type(uint256).max;
@@ -84,9 +84,9 @@ contract VivaPoint is Ownable {
         emit SetReferrerIncentiveRate(_incentive);
     }
 
-    function setReferreeIncentiveRate(uint256 _incentive) public onlyOwner {
-        referreeIncentiveRate = _incentive;
-        emit SetReferreeIncentiveRate(_incentive);
+    function setrefereeIncentiveRate(uint256 _incentive) public onlyOwner {
+        refereeIncentiveRate = _incentive;
+        emit SetRefereeIncentiveRate(_incentive);
     }
 
     function setWhitelist(address _account, bool _isWhitelisted) external onlyOwner {
@@ -114,23 +114,22 @@ contract VivaPoint is Ownable {
     // ==============================
 
 
-    function setReferral(address _referrer, address _referree) public onlyWhitelisted(msg.sender) {
-        _setReferral(_referrer, _referree);
+    function setReferral(address _referrer, address _referee) public onlyWhitelisted(msg.sender) {
+        _setReferral(_referrer, _referee);
     }
 
     function setReferral(address _referrer) public {
         _setReferral(_referrer, msg.sender);
     }
 
-    function _setReferral(address _referrer, address _referree) internal {
-        if (referrer[_referree] != address(0)) return;
-        if (_referrer == _referree) return;
-        update(_referree);
+    function _setReferral(address _referrer, address _referee) internal {
+        if (_referrer == _referee) return;
+        update(_referee);
 
-        referrer[_referree] = _referrer;
-        referrees[_referrer].push(_referree);
+        referrer[_referee] = _referrer;
+        referees[_referrer].push(_referee);
         
-        emit SetReferral(_referrer, _referree);
+        emit SetReferral(_referrer, _referee);
     }
 
     // ==============================
@@ -161,15 +160,15 @@ contract VivaPoint is Ownable {
 
         user.v3Point += totalAddedPoint;
 
-        address _referrer = referrer[_account];
-        uint256 referreePoint = 0;
+        address referrerAddress = referrer[_account];
+        uint256 refereePoint = 0;
         uint256 referrerPoint = 0;
-        if (_referrer != address(0)) {
-            referreePoint = (totalAddedPoint * referreeIncentiveRate / 1e18);
+        if (referrerAddress != address(0)) {
+            refereePoint = (totalAddedPoint * refereeIncentiveRate / 1e18);
             referrerPoint = (totalAddedPoint * referrerIncentiveRate / 1e18);
 
-            user.v3ReferralPoint += referreePoint;
-            users[_referrer].v3ReferralPoint += referrerPoint;
+            user.v3ReferralPoint += refereePoint;
+            users[referrerAddress].v3ReferralPoint += referrerPoint;
         }
 
         // update new amount and lastUpdatedTime
@@ -177,7 +176,7 @@ contract VivaPoint is Ownable {
         user.supplyAmount = vcNOTE.balanceOfUnderlying(_account);
         user.lastUpdatedTime = lastTime;
 
-        emit UpdatePoint(_account, totalAddedPoint, _referrer, referrerPoint, referreePoint);
+        emit UpdatePoint(_account, totalAddedPoint, referrerAddress, referrerPoint, refereePoint);
         return;
     }
 
@@ -187,11 +186,11 @@ contract VivaPoint is Ownable {
         }
     }
 
-    function updateWithReferrees(address _account) public {
+    function updateWithreferees(address _account) public {
         update(_account);
-        address[] memory _referrees = referrees[_account];
-        for (uint256 i=0; i<_referrees.length; i++) {
-            update(_referrees[i]);
+        address[] memory _referees = referees[_account];
+        for (uint256 i=0; i<_referees.length; i++) {
+            update(_referees[i]);
         }
     }
 
