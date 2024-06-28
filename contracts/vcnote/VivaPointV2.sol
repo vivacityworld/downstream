@@ -8,7 +8,7 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
  * @title VivaPoint
  * @dev The VivaPoints contract accumulates points based on the amount of NOTE deposited by the account.
  */
-contract VivaPoint is Ownable {
+contract VivaPointV2 is Ownable {
 
     event SetWhitelist(address account, bool isWhitelisted);
     event SetStartBlock(uint256 _startBlock);

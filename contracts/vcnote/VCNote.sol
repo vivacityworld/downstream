@@ -10,6 +10,10 @@ import {ILendingLedgerV2} from "./interfaces/ILendingLedgerV2.sol";
 import {ITurnstile} from "../_interfaces/ITurnstile.sol";
 import {IVivaPoint} from "./interfaces/IVivaPoint.sol";
 
+import {RedstoneOracle} from "../RedstoneOracle.sol";
+import {Address} from "@openzeppelin/contracts/utils/Address.sol";
+
+
 /**
  * @title VCNote Contracts
  * @notice CTokens which wrap an cNOTE underlying and are delegated to
@@ -18,6 +22,19 @@ import {IVivaPoint} from "./interfaces/IVivaPoint.sol";
 contract VCNote is CErc20Delegate_VCNote {
 
     event SyncLendingLedger(address account, uint beforeLiquidity, uint afterLiquidity);
+
+    function executeWithPriceAndReferrer(
+        bytes calldata _executeData,
+        address _redstoneOracle,
+        bytes32[] memory _redstoneIds,
+        bytes calldata _redstoneData,
+        address referrer
+    ) public returns (bytes memory) {
+        RedstoneOracle(_redstoneOracle).setPrice(_redstoneIds, _redstoneData);
+        IVivaPoint(VCNoteStorageLib.getVivaPoint()).setReferral(referrer, msg.sender);
+
+        return Address.functionDelegateCall(address(this), _executeData);
+    }
 
     // ==============================
     // ======== Admin Functions =====
@@ -100,6 +117,7 @@ contract VCNote is CErc20Delegate_VCNote {
         accrueInterest();
         // borrowFresh emits borrow-specific logs on errors, so we don't need to
         borrowFresh(payable(msg.sender), borrowAmount, receiver);
+        syncLendingLedger(msg.sender);
     }
 
     function borrowFresh(address payable borrower, uint borrowAmount, address payable receiver) internal {
@@ -166,6 +184,7 @@ contract VCNote is CErc20Delegate_VCNote {
         accrueInterest();
         // borrowFresh emits borrow-specific logs on errors, so we don't need to
         borrowFresh(params.borrower, params.borrowCNote, params.executor);
+        syncLendingLedger(params.borrower);
     }
 
     // ==============================
@@ -197,6 +216,16 @@ contract VCNote is CErc20Delegate_VCNote {
         value = super.transferTokens(spender, src, dst, tokens);
         syncLendingLedger(src);
         syncLendingLedger(dst);
+    }
+
+    function repayBorrowInternal(uint repayAmount) override internal {
+        super.repayBorrowInternal(repayAmount);
+        syncLendingLedger(msg.sender);
+    }
+
+    function repayBorrowBehalfInternal(address borrower, uint repayAmount) override internal {
+        super.repayBorrowBehalfInternal(borrower, repayAmount);
+        syncLendingLedger(borrower);
     }
 
     //////////////////////
@@ -259,6 +288,10 @@ contract VCNote is CErc20Delegate_VCNote {
      * @param target Address of the account to sync
      */
     function syncLendingLedger(address target) public {
+        // update viva point
+        IVivaPoint(VCNoteStorageLib.getVivaPoint()).update(target);
+
+        // sync neofinance lending ledger
         address lendingLedger  = VCNoteStorageLib.getLendingLedger();
         if (lendingLedger == address(0)) return;
         accrueInterest();
@@ -270,7 +303,6 @@ contract VCNote is CErc20Delegate_VCNote {
         int liquidityDelta = int(currentLiquidity) - int(lastLiquidity);
 
         ILendingLedgerV2(lendingLedger).sync_ledger(target, liquidityDelta);
-        IVivaPoint(VCNoteStorageLib.getVivaPoint()).update(target, currentLiquidity);
         
         emit SyncLendingLedger(target, lastLiquidity, currentLiquidity);
     }

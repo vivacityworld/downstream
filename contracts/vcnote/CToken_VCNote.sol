@@ -641,7 +641,7 @@ abstract contract CToken_VCNote is CTokenInterface, ExponentialNoError, TokenErr
      * @notice Sender repays their own borrow
      * @param repayAmount The amount to repay, or -1 for the full outstanding amount
      */
-    function repayBorrowInternal(uint repayAmount) internal nonReentrant {
+    function repayBorrowInternal(uint repayAmount) internal virtual nonReentrant {
         accrueInterest();
         // repayBorrowFresh emits repay-borrow-specific logs on errors, so we don't need to
         repayBorrowFresh(msg.sender, msg.sender, repayAmount);
@@ -652,7 +652,7 @@ abstract contract CToken_VCNote is CTokenInterface, ExponentialNoError, TokenErr
      * @param borrower the account with the debt being payed off
      * @param repayAmount The amount to repay, or -1 for the full outstanding amount
      */
-    function repayBorrowBehalfInternal(address borrower, uint repayAmount) internal nonReentrant {
+    function repayBorrowBehalfInternal(address borrower, uint repayAmount) internal virtual nonReentrant {
         accrueInterest();
         // repayBorrowFresh emits repay-borrow-specific logs on errors, so we don't need to
         repayBorrowFresh(msg.sender, borrower, repayAmount);
