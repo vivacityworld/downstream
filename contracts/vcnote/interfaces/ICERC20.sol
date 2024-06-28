@@ -18,4 +18,6 @@ interface ICERC20 {
     function balanceOf(address owner) external view returns (uint256);
     function borrowBalanceCurrent(address account) external returns (uint);
     function exchangeRateCurrent() external returns (uint);
+    function balanceOfUnderlying(address owner) external returns (uint);
+    
 }
